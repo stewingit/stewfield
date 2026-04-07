@@ -718,7 +718,6 @@ do
 	local AssetBaseURL = "https://github.com/stewingit/stewfield/blob/main/assets/"
 
 	local assetFiles = {
-		["warning2"] = AssetBaseURL.."warning2.png?raw=true",
 		["arrow"] = AssetBaseURL.."arrow.png?raw=true",
 		["settings"] = AssetBaseURL.."settings.png?raw=true",
 		["close"] = AssetBaseURL.."close.png?raw=true",
@@ -733,7 +732,6 @@ do
 		["up"] = AssetBaseURL.."up.png?raw=true",
 		["cube"] = AssetBaseURL.."cube.png?raw=true",
 		["line3"] = AssetBaseURL.."line3.png?raw=true",
-		["search2"] = AssetBaseURL.."search2.png?raw=true",
 	}
 
 	for id, _ in assetFiles do
@@ -796,7 +794,7 @@ Rayfield.Main.Topbar.Hide.Image = customAssets["close"]
 Rayfield.Main.Topbar.ChangeSize.Image = customAssets["minimise"]
 Rayfield.Main.Topbar.Settings.Image = customAssets["settings"]
 Rayfield.Main.Topbar.Icon.Image = customAssets["arrow"]
-Rayfield.Main.Topbar.Search.Image = customAssets["search2"]
+Rayfield.Main.Topbar.Search.Image = customAssets["search"]
 Rayfield.Main.Topbar.Search.ImageRectOffset = Vector2.new(0, 0)
 Rayfield.Main.Topbar.Search.ImageRectSize = Vector2.new(0, 0)
 Rayfield.Main.Elements.Template.Toggle.Switch.Shadow.Image = customAssets["line2"]
@@ -811,7 +809,7 @@ Rayfield.Main.Elements.Template.ColorPicker.ColorSlider.SliderPoint.Image = cust
 Rayfield.Main.TabList.Template.Image.Image = customAssets["cube"]
 Rayfield.Main.Search.Search.Image = customAssets["search"]
 Rayfield.Main.Search.Shadow.Image = customAssets["line3"]
-Rayfield.Notifications.Template.Icon.Image = customAssets["warning2"]
+Rayfield.Notifications.Template.Icon.Image = customAssets["warning"]
 Rayfield.Notifications.Template.Shadow.Image = customAssets["line"]
 
 end -- custom asset block
