@@ -1,5 +1,5 @@
 if debugX then
-	warn('Initialising Rayfield')
+	warn('Initialising Stewfield')
 end
 
 local function getService(name)
@@ -112,9 +112,6 @@ local settingsTable = {
     }
 }
 
--- Settings that have been overridden by the developer.
--- These will not be saved to the user's configuration file
--- Overridden settings always take precedence over settings in the configuration file, and are cleared if the user changes the setting in the UI
 local overriddenSettings: { [string]: any } = {} -- For example, overriddenSettings["System.rayfieldOpen"] = "J"
 local function overrideSetting(category: string, name: string, value: any)
 	overriddenSettings[category .. "." .. name] = value
@@ -153,7 +150,7 @@ local function callSafely(func, ...)
 	if func then
 		local success, result = pcall(func, ...)
 		if not success then
-			warn("Rayfield | Function failed with error: ", result)
+			warn("Stewfield | Function failed with error: ", result)
 			return false
 		else
 			return result
@@ -688,10 +685,6 @@ elseif not useStudio then
 	end
 end
 
-if secureMode and not customAssetId then
-	secureNotify("default_asset", "Secure Mode", "You are using the default Rayfield asset ID. Set RAYFIELD_ASSET_ID to a custom upload to avoid detection.")
-end
-
 -- Added Loading Text
 local LoadingAssetsLabel = Instance.new("TextLabel")
 LoadingAssetsLabel.Name = "AssetLoadingLabel"
@@ -770,13 +763,13 @@ do
 				if success then
 					customAssets[tostring(id)] = asset
 				else
-					warn("Rayfield | Failed to load custom asset: "..tostring(id).." - "..tostring(asset))
+					warn("Stewfield | Failed to load custom asset: "..tostring(id).." - "..tostring(asset))
 				end
 			end
 		end)
 
 		if not ok then
-			warn("Rayfield | Failed to load custom assets: "..tostring(err))
+			warn("Stewfield | Failed to load custom assets: "..tostring(err))
 			secureNotify("asset_load_fail", "Rayfield", "Failed to load custom assets. UI images may not display correctly.")
 		end
 	else
@@ -937,9 +930,9 @@ local function getAssetUri(id: any): string
 	if type(id) == "number" then
 		assetUri = "rbxassetid://" .. id
 	elseif type(id) == "string" and not Icons then
-		warn("Rayfield | Cannot use Lucide icons as icons library is not loaded")
+		warn("Stewfield | Cannot use Lucide icons as icons library is not loaded")
 	else
-		warn("Rayfield | The icon argument must either be an icon ID (number) or a Lucide icon name (string)")
+		warn("Stewfield | The icon argument must either be an icon ID (number) or a Lucide icon name (string)")
 	end
 	return assetUri
 end
@@ -1059,7 +1052,7 @@ local function LoadConfiguration(Configuration)
 	local success, Data = pcall(function() return HttpService:JSONDecode(Configuration) end)
 	local changed
 
-	if not success then warn('Rayfield had an issue decoding the configuration file, please try delete the file and reopen Rayfield.') return end
+	if not success then warn('Stewfield had an issue decoding the configuration file, please try delete the file and reopen Stewfield.') return end
 
 	-- Iterate through current UI elements' flags
 	for FlagName, Flag in pairs(RayfieldLibrary.Flags) do
@@ -1078,7 +1071,7 @@ local function LoadConfiguration(Configuration)
 				end
 			end)
 		else
-			warn("Rayfield | Unable to find '"..FlagName.. "' in the save file.")
+			warn("Stewfield | Unable to find '"..FlagName.. "' in the save file.")
 			print("The error above may not be an issue if new elements have been added or not been set values.")
 			--RayfieldLibrary:Notify({Title = "Rayfield Flags", Content = "Rayfield was unable to find '"..FlagName.. "' in the save file. Check sirius.menu/discord for help.", Image = 3944688398})
 		end
@@ -1180,7 +1173,7 @@ function RayfieldLibrary:Notify(data) -- action e.g open messages
 		newNotification.Visible = true
 
 		if data.Actions then
-			warn('Rayfield | Not seeing your actions in notifications?')
+			warn('Stewfield | Not seeing your actions in notifications?')
 			print("Notification Actions are being sunset for now, keep up to date on when they're back in the discord. (sirius.menu/discord)")
 		end
 
@@ -1623,13 +1616,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 	if getgenv then getgenv().rayfieldCached = true end
 
-	if not correctBuild and not Settings.DisableBuildWarnings then
-		task.delay(3, 
-			function() 
-				RayfieldLibrary:Notify({Title = 'Build Mismatch', Content = 'Rayfield may encounter issues as you are running an incompatible interface version ('.. ((Rayfield:FindFirstChild('Build') and Rayfield.Build.Value) or 'No Build') ..').\n\nThis version of Rayfield is intended for interface build '..InterfaceBuild..'.\n\nTry rejoining and then run the script twice.', Image = 4335487866, Duration = 15})		
-			end)
-	end
-
 	if Settings.ToggleUIKeybind then -- Can either be a string or an Enum.KeyCode
 		local keybind = Settings.ToggleUIKeybind
 		if type(keybind) == "string" then
@@ -1665,10 +1651,10 @@ function RayfieldLibrary:CreateWindow(Settings)
 	end
 
 	LoadingFrame.Version.TextTransparency = 1
-	LoadingFrame.Title.Text = Settings.LoadingTitle or "Rayfield"
-	LoadingFrame.Subtitle.Text = Settings.LoadingSubtitle or "Interface Suite"
+	LoadingFrame.Title.Text = Settings.LoadingTitle or "Stewfield"
+	LoadingFrame.Subtitle.Text = Settings.LoadingSubtitle or "Interface"
 
-	if Settings.LoadingTitle ~= "Rayfield Interface Suite" then
+	if Settings.LoadingTitle ~= "Stewfield Interface" then
 		LoadingFrame.Version.Text = "Stewfield UI"
 	end
 
@@ -1805,7 +1791,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 		end
 
 		if not Passthrough and secureMode then
-			warn("Rayfield | Secure Mode: Key system requires a valid saved key. The key UI cannot be shown as it requires loading detectable assets.")
+			warn("Stewfield | Secure Mode: Key system requires a valid saved key. The key UI cannot be shown as it requires loading detectable assets.")
 			Rayfield.Enabled = false
 			return RayfieldLibrary
 		end
