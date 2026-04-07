@@ -699,8 +699,21 @@ LoadingAssetsLabel.TextSize = 26
 LoadingAssetsLabel.Font = Enum.Font.SourceSansBold
 LoadingAssetsLabel.ZIndex = 10000
 Rayfield.Enabled = true -- Ensure UI is visible to see the text
+
+-- Dot Animation Logic
+task.spawn(function()
+    local animFrames = {"...", "..", ".", ".."}
+    local index = 1
+    -- This loop runs as long as the label exists
+    while LoadingAssetsLabel and LoadingAssetsLabel.Parent do
+        LoadingAssetsLabel.Text = "Loading Assets" .. animFrames[index]
+        index = (index % #animFrames) + 1
+        task.wait(0.3) -- Change this value to adjust animation speed
+    end
+end)
+
 do
-	local AssetPath = RayfieldFolder.."/Assets"
+    local AssetPath = RayfieldFolder.."/Assets"
 	local AssetBaseURL = "https://github.com/stewingit/stewfield/blob/main/assets/"
 
 	local assetFiles = {
