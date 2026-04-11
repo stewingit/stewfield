@@ -1247,19 +1247,12 @@ local function openSearch()
 		searchTab.Parent = Elements
 	end
 
--- Clear old buttons inside the search tab
+	-- Clear old buttons inside the search tab
 	for _, child in ipairs(searchTab:GetChildren()) do
 		if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
 			child:Destroy()
 		end
 	end
-
-	-- Add a spacer to push buttons safely below the search bar overlay
-	local spacer = Elements.Template.SectionSpacing:Clone()
-	spacer.Size = UDim2.new(1, 0, 0, 50)
-	spacer.LayoutOrder = -100
-	spacer.Visible = true
-	spacer.Parent = searchTab
 
 	-- Populate buttons for each tab
 	for _, tabbtn in ipairs(TabList:GetChildren()) do
@@ -3788,8 +3781,7 @@ Main.Search.Input:GetPropertyChangedSignal('Text'):Connect(function()
 	local searchText = string.lower(Main.Search.Input.Text)
 	
 	for _, btn in ipairs(searchTab:GetChildren()) do
-		-- Added btn.Name ~= "SectionSpacing" so our spacer isn't hidden by the filter
-		if btn.ClassName == "Frame" and btn.Name ~= "Placeholder" and btn.Name ~= 'UIListLayout' and btn.Name ~= "SectionSpacing" then
+		if btn.ClassName == "Frame" and btn.Name ~= "Placeholder" and btn.Name ~= 'UIListLayout' then
 			if #searchText == 0 then
 				btn.Visible = true
 			else
