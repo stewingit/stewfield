@@ -1232,8 +1232,67 @@ function RayfieldLibrary:Notify(data) -- action e.g open messages
 	end)
 end
 
+local preSearchPage = nil
 local function openSearch()
 	searchOpen = true
+	preSearchPage = Elements.UIPageLayout.CurrentPage
+
+	-- Create Search Results tab if it doesn't exist
+	local searchTab = Elements:FindFirstChild("Search Results")
+	if not searchTab then
+		searchTab = Elements.Template:Clone()
+		searchTab.Name = "Search Results"
+		searchTab.Visible = true
+		searchTab.LayoutOrder = 10001
+		searchTab.Parent = Elements
+	end
+
+	-- Clear old buttons inside the search tab
+	for _, child in ipairs(searchTab:GetChildren()) do
+		if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
+			child:Destroy()
+		end
+	end
+
+	-- Populate buttons for each tab
+	for _, tabbtn in ipairs(TabList:GetChildren()) do
+		if tabbtn.ClassName == "Frame" and tabbtn.Name ~= "Placeholder" and tabbtn.Name ~= "Template" and tabbtn.Name ~= "Rayfield Settings" then
+			local tabName = tabbtn.Name
+			local btn = Elements.Template.Button:Clone()
+			btn.Name = tabName
+			btn.Title.Text = "Go to tab: " .. tabName
+			btn.Visible = true
+			btn.Parent = searchTab
+			
+			-- Force correct visual properties
+			btn.BackgroundTransparency = 0
+			btn.UIStroke.Transparency = 0
+			btn.Title.TextTransparency = 0
+			btn.BackgroundColor3 = SelectedTheme.ElementBackground
+			btn.UIStroke.Color = SelectedTheme.ElementStroke
+
+			btn.MouseEnter:Connect(function()
+				TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
+			end)
+
+			btn.MouseLeave:Connect(function()
+				TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+			end)
+
+			-- Navigation Logic
+			btn.Interact.MouseButton1Click:Connect(function()
+				local targetTab = Elements:FindFirstChild(tabName)
+				if targetTab then
+					preSearchPage = targetTab -- Set our return destination to the clicked tab
+				end
+				closeSearch()
+			end)
+		end
+	end
+
+	Elements.UIPageLayout.Animated = false
+	Elements.UIPageLayout:JumpTo(searchTab)
+	Elements.UIPageLayout.Animated = true
 
 	Main.Search.BackgroundTransparency = 1
 	Main.Search.Shadow.ImageTransparency = 1
@@ -1244,7 +1303,6 @@ local function openSearch()
 	Main.Search.Position = UDim2.new(0.5, 0, 0, 70)
 
 	Main.Search.Input.Interactable = true
-
 	Main.Search.Visible = true
 
 	for _, tabbtn in ipairs(TabList:GetChildren()) do
@@ -1268,6 +1326,12 @@ end
 
 local function closeSearch()
 	searchOpen = false
+	-- Navigate safely out of the search tab
+	if Elements.UIPageLayout.CurrentPage.Name == "Search Results" and preSearchPage then
+		Elements.UIPageLayout.Animated = false
+		Elements.UIPageLayout:JumpTo(preSearchPage)
+		Elements.UIPageLayout.Animated = true
+	end
 
 	TweenService:Create(Main.Search, TweenInfo.new(0.35, Enum.EasingStyle.Quint), {BackgroundTransparency = 1, Size = UDim2.new(1, -55, 0, 30)}):Play()
 	TweenService:Create(Main.Search.Search, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {ImageTransparency = 1}):Play()
@@ -1275,9 +1339,8 @@ local function closeSearch()
 	TweenService:Create(Main.Search.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {Transparency = 1}):Play()
 	TweenService:Create(Main.Search.Input, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {TextTransparency = 1}):Play()
 
-		for _, tabbtn in ipairs(TabList:GetChildren()) do
+	for _, tabbtn in ipairs(TabList:GetChildren()) do
 		if tabbtn.ClassName == "Frame" and tabbtn.Name ~= "Placeholder" then
-			tabbtn.Visible = true
 			tabbtn.Interact.Visible = true
 			if tostring(Elements.UIPageLayout.CurrentPage) == tabbtn.Title.Text then
 				TweenService:Create(tabbtn, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
@@ -3712,31 +3775,20 @@ Topbar.ChangeSize.MouseButton1Click:Connect(function()
 end)
 
 Main.Search.Input:GetPropertyChangedSignal('Text'):Connect(function()
+	local searchTab = Elements:FindFirstChild("Search Results")
+	if not searchTab then return end
+	
 	local searchText = string.lower(Main.Search.Input.Text)
-
-	for _, tabbtn in ipairs(TabList:GetChildren()) do
-		if tabbtn.ClassName == "Frame" and tabbtn.Name ~= "Placeholder" and tabbtn.Name ~= "Template" then
+	
+	for _, btn in ipairs(searchTab:GetChildren()) do
+		if btn.ClassName == "Frame" and btn.Name ~= "Placeholder" and btn.Name ~= 'UIListLayout' then
 			if #searchText == 0 then
-				-- Reset to the transparent/hidden state of openSearch when empty
-				tabbtn.Visible = true
-				tabbtn.Interact.Visible = false
-				TweenService:Create(tabbtn, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
-				TweenService:Create(tabbtn.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
-				TweenService:Create(tabbtn.Image, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
-				TweenService:Create(tabbtn.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+				btn.Visible = true
 			else
-				-- Search through tab names specifically
-				if string.find(string.lower(tabbtn.Name), searchText, 1, true) then
-					tabbtn.Visible = true
-					tabbtn.Interact.Visible = true
-					TweenService:Create(tabbtn, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
-					TweenService:Create(tabbtn.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
-					-- Explicitly hide the icon during search as requested
-					TweenService:Create(tabbtn.Image, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
-					TweenService:Create(tabbtn.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
+				if string.find(string.lower(btn.Name), searchText, 1, true) then
+					btn.Visible = true
 				else
-					-- Hide tabs that do not match the search query
-					tabbtn.Visible = false
+					btn.Visible = false
 				end
 			end
 		end
