@@ -1233,6 +1233,8 @@ function RayfieldLibrary:Notify(data) -- action e.g open messages
 end
 
 local preSearchPage = nil
+local closeSearch -- Forward declaration to fix scope nil error
+
 local function openSearch()
 	searchOpen = true
 	preSearchPage = Elements.UIPageLayout.CurrentPage
@@ -1324,13 +1326,18 @@ local function openSearch()
 	TweenService:Create(Main.Search, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {Size = UDim2.new(1, -35, 0, 35)}):Play()
 end
 
-local function closeSearch()
+closeSearch = function()
 	searchOpen = false
+	
+	local targetPageName = nil
 	-- Navigate safely out of the search tab
-	if Elements.UIPageLayout.CurrentPage.Name == "Search Results" and preSearchPage then
+	if Elements.UIPageLayout.CurrentPage and Elements.UIPageLayout.CurrentPage.Name == "Search Results" and preSearchPage then
 		Elements.UIPageLayout.Animated = false
 		Elements.UIPageLayout:JumpTo(preSearchPage)
 		Elements.UIPageLayout.Animated = true
+		targetPageName = preSearchPage.Name
+	else
+		targetPageName = Elements.UIPageLayout.CurrentPage and Elements.UIPageLayout.CurrentPage.Name
 	end
 
 	TweenService:Create(Main.Search, TweenInfo.new(0.35, Enum.EasingStyle.Quint), {BackgroundTransparency = 1, Size = UDim2.new(1, -55, 0, 30)}):Play()
@@ -1342,7 +1349,7 @@ local function closeSearch()
 	for _, tabbtn in ipairs(TabList:GetChildren()) do
 		if tabbtn.ClassName == "Frame" and tabbtn.Name ~= "Placeholder" then
 			tabbtn.Interact.Visible = true
-			if tostring(Elements.UIPageLayout.CurrentPage) == tabbtn.Title.Text then
+			if targetPageName == tabbtn.Title.Text then
 				TweenService:Create(tabbtn, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0, BackgroundColor3 = SelectedTheme.TabBackgroundSelected}):Play()
 				TweenService:Create(tabbtn.Image, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0, ImageColor3 = SelectedTheme.SelectedTabTextColor}):Play()
 				TweenService:Create(tabbtn.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0, TextColor3 = SelectedTheme.SelectedTabTextColor}):Play()
