@@ -1354,6 +1354,15 @@ closeSearch = function()
 				TweenService:Create(tabbtn.Image, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0, ImageColor3 = SelectedTheme.SelectedTabTextColor}):Play()
 				TweenService:Create(tabbtn.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0, TextColor3 = SelectedTheme.SelectedTabTextColor}):Play()
 				TweenService:Create(tabbtn.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+				
+				-- Automatically scroll the TabList to center the selected tab
+				if TabList:IsA("ScrollingFrame") then
+					local targetX = tabbtn.AbsolutePosition.X - TabList.AbsolutePosition.X + TabList.CanvasPosition.X - (TabList.AbsoluteSize.X / 2) + (tabbtn.AbsoluteSize.X / 2)
+					local maxScroll = math.max(0, TabList.AbsoluteCanvasSize.X - TabList.AbsoluteSize.X)
+					targetX = math.clamp(targetX, 0, maxScroll)
+					
+					TweenService:Create(TabList, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {CanvasPosition = Vector2.new(targetX, 0)}):Play()
+				end
 			else
 				TweenService:Create(tabbtn, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7, BackgroundColor3 = SelectedTheme.TabBackground}):Play()
 				TweenService:Create(tabbtn.Image, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {ImageTransparency = 0.2, ImageColor3 = SelectedTheme.TabTextColor}):Play()
