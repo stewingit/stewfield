@@ -220,7 +220,6 @@ local function loadSettings()
 					end
 				end
 			end
-		end
 		-- If no settings saved, apply overridden settings only
 		else
 			for settingName, settingValue in overriddenSettings do
