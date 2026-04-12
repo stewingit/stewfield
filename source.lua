@@ -1613,8 +1613,8 @@ local function saveSettings() -- Save settings to file
 				script.Parent['get.val'].Value = encoded
 			end
 		end
+		-- Only save to the unique SettingsId file to prevent cross-script overwriting
 		callSafely(writefile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension, encoded)
-		callSafely(writefile, RayfieldFolder..'/settings'..ConfigurationExtension, encoded)
 	end
 end
 
@@ -1823,8 +1823,12 @@ function RayfieldLibrary:CreateWindow(Settings)
 		ConfigurationFolder = Settings.ConfigurationSaving.FolderName or ConfigurationFolder
 		CEnabled = Settings.ConfigurationSaving.Enabled
 		
-		-- NEW: Set the unique settings file name based on the script's configuration filename
-		currentSettingsName = CFileName .. "_settings"
+		-- UPDATED: Use Settings.SettingsId for UI settings, fallback to "Default"
+		if Settings.SettingsId and type(Settings.SettingsId) == "string" and Settings.SettingsId ~= "" then
+			currentSettingsName = Settings.SettingsId .. "_settings"
+		else
+			currentSettingsName = "Default_settings"
+		end
 
 		if Settings.ConfigurationSaving.Enabled then
 			ensureFolder(ConfigurationFolder)
