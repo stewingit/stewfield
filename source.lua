@@ -206,12 +206,13 @@ local function loadSettings()
 			return
 		end
 
-		if next(file) ~= nil then
+		if next(file) ~= nil and file[currentWindowName] then
+			local windowSettings = file[currentWindowName] -- Access the specific window's data
 			for categoryName, settingCategory in pairs(settingsTable) do
-				if file[categoryName] then
+				if windowSettings[categoryName] then
 					for settingName, setting in pairs(settingCategory) do
-						if file[categoryName][settingName] ~= nil then
-							setting.Value = file[categoryName][settingName]
+						if windowSettings[categoryName][settingName] ~= nil then
+							setting.Value = windowSettings[categoryName][settingName]
 							if setting.Element and setting.Element.Set then
 								setting.Element:Set(getSetting(categoryName, settingName))
 							end
@@ -219,6 +220,7 @@ local function loadSettings()
 					end
 				end
 			end
+		end
 		-- If no settings saved, apply overridden settings only
 		else
 			for settingName, settingValue in overriddenSettings do
