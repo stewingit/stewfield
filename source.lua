@@ -101,11 +101,12 @@ local function secureNotify(wType, title, content)
 		})
 	end)
 end
-
+local InterfaceBuild = 'UU2NX'
+local Release = "Build 1.746"
 local RayfieldFolder = "Rayfield"
 local ConfigurationFolder = RayfieldFolder.."/Configurations"
 local ConfigurationExtension = ".rfld"
-local currentConfigId = "Default"
+local currentSettingsName = "DefaultSettings"
 local settingsTable = {
     General = {
         rayfieldOpen = {Type = 'bind', Value = 'K', Name = 'Rayfield Keybind'},
@@ -173,19 +174,15 @@ local function loadSettings()
 
 	local success, result =	pcall(function()
 		if callSafely(isfolder, RayfieldFolder) then
-			if callSafely(isfile, RayfieldFolder..'/GlobalSettings'..ConfigurationExtension) then
-local rawFile = callSafely(readfile, RayfieldFolder..'/GlobalSettings'..ConfigurationExtension)
-local decodeSuccess, decodedGlobal = pcall(function() return HttpService:JSONDecode(rawFile) end)
-if decodeSuccess and type(decodedGlobal) == "table" and decodedGlobal[currentConfigId] then
-    file = decodedGlobal[currentConfigId]
-end
+			if callSafely(isfile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension) then
+				file = callSafely(readfile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension)
 			end
 		end
 
 		-- for debug in studio
 		if useStudio then
 			file = [[
-    {"General":{"rayfieldOpen":"K","rememberTab":false,"lastTab":"","theme":["Default"]}}
+    {"General":{"rayfieldOpen":{"Value":"K","Type":"bind","Name":"Rayfield Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"Rayfield Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}}}
 ]]
 		end
 
@@ -209,8 +206,8 @@ end
 			for categoryName, settingCategory in pairs(settingsTable) do
 				if file[categoryName] then
 					for settingName, setting in pairs(settingCategory) do
-						if file[categoryName][settingName] ~= nil then
-							setting.Value = file[categoryName][settingName]
+						if file[categoryName][settingName] then
+							setting.Value = file[categoryName][settingName].Value
 							if setting.Element and setting.Element.Set then
 								setting.Element:Set(getSetting(categoryName, settingName))
 							end
@@ -1607,28 +1604,7 @@ end
 local function saveSettings() -- Save settings to file
 	local encoded
 	local success, err = pcall(function()
-		local globalSettings = {}
-		-- Load existing global settings if they exist
-		if callSafely(isfile, RayfieldFolder..'/GlobalSettings'..ConfigurationExtension) then
-			local rawData = callSafely(readfile, RayfieldFolder..'/GlobalSettings'..ConfigurationExtension)
-			local decSuccess, decData = pcall(function() return HttpService:JSONDecode(rawData) end)
-			if decSuccess and type(decData) == "table" then
-				globalSettings = decData
-			end
-		end
-		
-		-- Create a clean table for the current window to avoid saving element functions and metadata
-		local cleanSettings = {}
-		for categoryName, settingCategory in pairs(settingsTable) do
-			cleanSettings[categoryName] = {}
-			for settingName, setting in pairs(settingCategory) do
-				cleanSettings[categoryName][settingName] = setting.Value
-			end
-		end
-
--- Append/Update the current window's settings
-globalSettings[currentConfigId] = cleanSettings
-encoded = HttpService:JSONEncode(globalSettings)
+		encoded = HttpService:JSONEncode(settingsTable)
 	end)
 
 	if success then
@@ -1637,7 +1613,8 @@ encoded = HttpService:JSONEncode(globalSettings)
 				script.Parent['get.val'].Value = encoded
 			end
 		end
-		callSafely(writefile, RayfieldFolder..'/GlobalSettings'..ConfigurationExtension, encoded)
+		callSafely(writefile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension, encoded)
+		callSafely(writefile, RayfieldFolder..'/settings'..ConfigurationExtension, encoded)
 	end
 end
 
@@ -1770,10 +1747,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 		end
 	end
 
-	if Settings.RememberTab ~= nil then
-		overrideSetting("General", "rememberTab", Settings.RememberTab)
-	end
-
 	ensureFolder(RayfieldFolder)
 
 	local Passthrough = false
@@ -1847,15 +1820,15 @@ function RayfieldLibrary:CreateWindow(Settings)
 		end
 
 		CFileName = Settings.ConfigurationSaving.FileName
-ConfigurationFolder = Settings.ConfigurationSaving.FolderName or ConfigurationFolder
-CEnabled = Settings.ConfigurationSaving.Enabled
+		ConfigurationFolder = Settings.ConfigurationSaving.FolderName or ConfigurationFolder
+		CEnabled = Settings.ConfigurationSaving.Enabled
+		
+		-- NEW: Set the unique settings file name based on the script's configuration filename
+		currentSettingsName = CFileName .. "_settings"
 
--- Prioritize ConfigurationId, fallback to Name if not provided
-currentConfigId = Settings.ConfigurationId or Settings.Name or "Default"
-
-if Settings.ConfigurationSaving.Enabled then
-    ensureFolder(ConfigurationFolder)
-end
+		if Settings.ConfigurationSaving.Enabled then
+			ensureFolder(ConfigurationFolder)
+		end
 	end)
 
 	-- NEW: Reload settings now that we have the proper script-specific file name
@@ -2161,9 +2134,7 @@ end
 		if isTargetTab and not Ext then
 			Elements.UIPageLayout.Animated = false
 			Elements.UIPageLayout:JumpTo(TabPage)
-			task.defer(function()
-				Elements.UIPageLayout.Animated = true
-			end)
+			Elements.UIPageLayout.Animated = true
 		end
 
 		TabButton.UIStroke.Color = SelectedTheme.TabStroke
