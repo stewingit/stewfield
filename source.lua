@@ -106,11 +106,13 @@ local Release = "Build 1.746"
 local RayfieldFolder = "Rayfield"
 local ConfigurationFolder = RayfieldFolder.."/Configurations"
 local ConfigurationExtension = ".rfld"
+local currentSettingsName = "DefaultSettings"
 local settingsTable = {
     General = {
         rayfieldOpen = {Type = 'bind', Value = 'K', Name = 'Rayfield Keybind'},
         rememberTab = {Type = 'toggle', Value = false, Name = 'Remember Previous Tab'},
-        lastTab = {Type = 'hidden', Value = ''}
+        lastTab = {Type = 'hidden', Value = ''},
+        theme = {Type = 'dropdown', Value = {'Default'}, Name = 'Interface Theme', Options = {'Default', 'Ocean', 'AmberGlow', 'Light', 'Amethyst', 'Green', 'Bloom', 'DarkBlue', 'Serenity'}}
     }
 }
 
@@ -172,8 +174,8 @@ local function loadSettings()
 
 	local success, result =	pcall(function()
 		if callSafely(isfolder, RayfieldFolder) then
-			if callSafely(isfile, RayfieldFolder..'/settings'..ConfigurationExtension) then
-				file = callSafely(readfile, RayfieldFolder..'/settings'..ConfigurationExtension)
+			if callSafely(isfile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension) then
+				file = callSafely(readfile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension)
 			end
 		end
 
@@ -1611,6 +1613,9 @@ local function saveSettings() -- Save settings to config file
 				script.Parent['get.val'].Value = encoded
 			end
 		end
+		callSafely(writefile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension, encoded)
+			end
+		end
 		callSafely(writefile, RayfieldFolder..'/settings'..ConfigurationExtension, encoded)
 	end
 end
@@ -1676,6 +1681,22 @@ local function createSettings(window)
 					CallOnChange = true,
 					Callback = function(Value)
 						updateSetting(categoryName, settingName, Value)
+					end,
+				})
+			elseif setting.Type == 'dropdown' then
+				setting.Element = newTab:CreateDropdown({
+					Name = setting.Name,
+					Options = setting.Options,
+					CurrentOption = setting.Value,
+					MultipleOptions = false,
+					Ext = true,
+					Callback = function(Value)
+						updateSetting(categoryName, settingName, Value)
+						-- Update the theme visually in real-time
+						if settingName == "theme" then
+							local selectedTheme = type(Value) == "table" and Value[1] or Value
+							pcall(ChangeTheme, selectedTheme)
+						end
 					end,
 				})
 			end
@@ -1803,12 +1824,23 @@ function RayfieldLibrary:CreateWindow(Settings)
 		CFileName = Settings.ConfigurationSaving.FileName
 		ConfigurationFolder = Settings.ConfigurationSaving.FolderName or ConfigurationFolder
 		CEnabled = Settings.ConfigurationSaving.Enabled
+		
+		-- NEW: Set the unique settings file name based on the script's configuration filename
+		currentSettingsName = CFileName .. "_settings"
 
 		if Settings.ConfigurationSaving.Enabled then
 			ensureFolder(ConfigurationFolder)
 		end
 	end)
 
+	-- NEW: Reload settings now that we have the proper script-specific file name
+	loadSettings()
+	
+	-- NEW: Override the script's requested theme with the user's saved theme if available
+	local savedTheme = getSetting("General", "theme")
+	if savedTheme then
+		Settings.Theme = type(savedTheme) == "table" and savedTheme[1] or savedTheme
+	end
 
 	makeDraggable(Main, Topbar, false, {dragOffset, dragOffsetMobile})
 	if dragBar then dragBar.Position = useMobileSizing and UDim2.new(0.5, 0, 0.5, dragOffsetMobile) or UDim2.new(0.5, 0, 0.5, dragOffset) makeDraggable(Main, dragInteract, true, {dragOffset, dragOffsetMobile}) end
