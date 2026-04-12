@@ -1806,11 +1806,24 @@ function RayfieldLibrary:CreateWindow(Settings)
 		end
 	end
 
-	Topbar.Visible = false
+Topbar.Visible = false
 	Elements.Visible = false
 	LoadingFrame.Visible = true
 
+	-- 1. ALWAYS handle the SettingsId first, regardless of ConfigurationSaving
+	if Settings.SettingsId and type(Settings.SettingsId) == "string" and Settings.SettingsId ~= "" then
+		currentSettingsName = Settings.SettingsId .. "_settings"
+	else
+		currentSettingsName = "Default_settings"
+	end
+
+	-- 2. Safely handle ConfigurationSaving (Element flags)
 	pcall(function()
+		-- Prevent errors if the user completely removed the ConfigurationSaving table
+		if not Settings.ConfigurationSaving then
+			Settings.ConfigurationSaving = { Enabled = false }
+		end
+
 		if not Settings.ConfigurationSaving.FileName then
 			Settings.ConfigurationSaving.FileName = tostring(game.PlaceId)
 		end
@@ -1822,20 +1835,13 @@ function RayfieldLibrary:CreateWindow(Settings)
 		CFileName = Settings.ConfigurationSaving.FileName
 		ConfigurationFolder = Settings.ConfigurationSaving.FolderName or ConfigurationFolder
 		CEnabled = Settings.ConfigurationSaving.Enabled
-		
-		-- UPDATED: Use Settings.SettingsId for UI settings, fallback to "Default"
-		if Settings.SettingsId and type(Settings.SettingsId) == "string" and Settings.SettingsId ~= "" then
-			currentSettingsName = Settings.SettingsId .. "_settings"
-		else
-			currentSettingsName = "Default_settings"
-		end
 
 		if Settings.ConfigurationSaving.Enabled then
 			ensureFolder(ConfigurationFolder)
 		end
 	end)
 
-	-- NEW: Reload settings now that we have the proper script-specific file name
+	-- Reload core UI settings now that the file name is properly set
 	loadSettings()
 	
 	-- NEW: Override the script's requested theme with the user's saved theme if available
