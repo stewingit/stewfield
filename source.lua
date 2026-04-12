@@ -7,15 +7,11 @@ local function getService(name)
 	return if cloneref then cloneref(service) else service
 end
 
--- Services
 local UserInputService = getService("UserInputService")
 local TweenService = getService("TweenService")
 local Players = getService("Players")
 local CoreGui = getService("CoreGui")
 
--- Loads and executes a function hosted on a remote URL.
--- Cancels the request if the requested URL takes too long to respond.
--- Errors with the function are caught and logged to the output
 local function loadWithTimeout(url: string, timeout: number?): ...any
 	assert(type(url) == "string", "Expected string, got " .. type(url))
 	timeout = timeout or 5
@@ -23,17 +19,16 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 	local success, result = false, nil
 
 	local requestThread = task.spawn(function()
-		local fetchSuccess, fetchResult = pcall(game.HttpGet, game, url) -- game:HttpGet(url)
-		-- If the request fails the content can be empty, even if fetchSuccess is true
+		local fetchSuccess, fetchResult = pcall(game.HttpGet, game, url)
 		if not fetchSuccess or #fetchResult == 0 then
 			if #fetchResult == 0 then
-				fetchResult = "Empty response" -- Set the error message
+				fetchResult = "Empty response"
 			end
 			success, result = false, fetchResult
 			requestCompleted = true
 			return
 		end
-		local content = fetchResult -- Fetched content
+		local content = fetchResult
 		local execSuccess, execResult = pcall(function()
 			return loadstring(content)()
 		end)
@@ -50,11 +45,9 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 		end
 	end)
 
-	-- Wait for completion or timeout
 	while not requestCompleted do
 		task.wait()
 	end
-	-- Cancel timeout thread if still running when request completes
 	if coroutine.status(timeoutThread) ~= "dead" then
 		task.cancel(timeoutThread)
 	end
@@ -108,15 +101,15 @@ local ConfigurationFolder = RayfieldFolder.."/Configurations"
 local ConfigurationExtension = ".rfld"
 local currentSettingsName = "DefaultSettings"
 local settingsTable = {
-    General = {
-        rayfieldOpen = {Type = 'bind', Value = 'K', Name = 'Rayfield Keybind'},
-        rememberTab = {Type = 'toggle', Value = true, Name = 'Remember Previous Tab'},
-        lastTab = {Type = 'hidden', Value = ''},
-        theme = {Type = 'dropdown', Value = {'Default'}, Name = 'Interface Theme', Options = {'Default', 'Ocean', 'AmberGlow', 'Light', 'Amethyst', 'Green', 'Bloom', 'DarkBlue', 'Serenity'}}
-    }
+	General = {
+		rayfieldOpen = {Type = 'bind', Value = 'K', Name = 'Rayfield Keybind'},
+		rememberTab = {Type = 'toggle', Value = true, Name = 'Remember Previous Tab'},
+		lastTab = {Type = 'hidden', Value = ''},
+		theme = {Type = 'dropdown', Value = {'Default'}, Name = 'Interface Theme', Options = {'Default', 'Ocean', 'AmberGlow', 'Light', 'Amethyst', 'Green', 'Bloom', 'DarkBlue', 'Serenity'}}
+	}
 }
 
-local overriddenSettings: { [string]: any } = {} -- For example, overriddenSettings["System.rayfieldOpen"] = "J"
+local overriddenSettings: { [string]: any } = {}
 local function overrideSetting(category: string, name: string, value: any)
 	overriddenSettings[category .. "." .. name] = value
 end
@@ -132,15 +125,13 @@ end
 local HttpService = getService('HttpService')
 local RunService = getService('RunService')
 
--- Environment Check
 local useStudio = RunService:IsStudio() or false
 
 local settingsCreated = false
-local settingsInitialized = false -- Whether the UI elements in the settings page have been set to the proper values
+local settingsInitialized = false
 local prompt = useStudio and require(script.Parent.prompt) or loadWithTimeout('https://raw.githubusercontent.com/stewingit/stewfield/refs/heads/main/prompt.lua')
 local requestFunc = (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request) or http_request or request
 
--- Validate prompt loaded correctly
 if not prompt and not useStudio then
 	warn("Failed to load prompt library, using fallback")
 	prompt = {
@@ -148,8 +139,6 @@ if not prompt and not useStudio then
 	}
 end
 
--- The function below provides a safe alternative for calling error-prone functions
--- Especially useful for filesystem function (writefile, makefolder, etc.)
 local function callSafely(func, ...)
 	if func then
 		local success, result = pcall(func, ...)
@@ -162,7 +151,6 @@ local function callSafely(func, ...)
 	end
 end
 
--- Ensures a folder exists by creating it if needed
 local function ensureFolder(folderPath)
 	if isfolder and not callSafely(isfolder, folderPath) then
 		callSafely(makefolder, folderPath)
@@ -179,10 +167,9 @@ local function loadSettings()
 			end
 		end
 
-		-- for debug in studio
 		if useStudio then
 			file = [[
-    {"General":{"rayfieldOpen":{"Value":"K","Type":"bind","Name":"Rayfield Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"Rayfield Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}}}
+	{"General":{"rayfieldOpen":{"Value":"K","Type":"bind","Name":"Rayfield Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"Rayfield Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}}}
 ]]
 		end
 
@@ -196,7 +183,6 @@ local function loadSettings()
 		else
 			file = {}
 		end
-
 
 		if not settingsCreated then
 			return
@@ -215,7 +201,6 @@ local function loadSettings()
 					end
 				end
 			end
-		-- If no settings saved, apply overridden settings only
 		else
 			for settingName, settingValue in overriddenSettings do
 				local split = string.split(settingName, ".")
@@ -252,7 +237,7 @@ local promptUser = 2
 if promptUser == 1 and prompt and type(prompt.create) == "function" then
 	prompt.create(
 		'Be cautious when running scripts',
-	    [[Please be careful when running scripts from unknown developers. This script has already been ran.
+		[[Please be careful when running scripts from unknown developers. This script has already been ran.
 
 <font transparency='0.3'>Some scripts may steal your items or in-game goods.</font>]],
 		'Okay',
@@ -272,30 +257,24 @@ local RayfieldLibrary = {
 	Theme = {
 		Default = {
 			TextColor = Color3.fromRGB(240, 240, 240),
-
 			Background = Color3.fromRGB(25, 25, 25),
 			Topbar = Color3.fromRGB(34, 34, 34),
 			Shadow = Color3.fromRGB(20, 20, 20),
-
 			NotificationBackground = Color3.fromRGB(20, 20, 20),
 			NotificationActionsBackground = Color3.fromRGB(230, 230, 230),
-
 			TabBackground = Color3.fromRGB(80, 80, 80),
 			TabStroke = Color3.fromRGB(85, 85, 85),
 			TabBackgroundSelected = Color3.fromRGB(210, 210, 210),
 			TabTextColor = Color3.fromRGB(240, 240, 240),
 			SelectedTabTextColor = Color3.fromRGB(50, 50, 50),
-
 			ElementBackground = Color3.fromRGB(35, 35, 35),
 			ElementBackgroundHover = Color3.fromRGB(40, 40, 40),
 			SecondaryElementBackground = Color3.fromRGB(25, 25, 25),
 			ElementStroke = Color3.fromRGB(50, 50, 50),
 			SecondaryElementStroke = Color3.fromRGB(40, 40, 40),
-
 			SliderBackground = Color3.fromRGB(50, 138, 220),
 			SliderProgress = Color3.fromRGB(50, 138, 220),
 			SliderStroke = Color3.fromRGB(58, 163, 255),
-
 			ToggleBackground = Color3.fromRGB(30, 30, 30),
 			ToggleEnabled = Color3.fromRGB(0, 146, 214),
 			ToggleDisabled = Color3.fromRGB(100, 100, 100),
@@ -303,41 +282,32 @@ local RayfieldLibrary = {
 			ToggleDisabledStroke = Color3.fromRGB(125, 125, 125),
 			ToggleEnabledOuterStroke = Color3.fromRGB(100, 100, 100),
 			ToggleDisabledOuterStroke = Color3.fromRGB(65, 65, 65),
-
 			DropdownSelected = Color3.fromRGB(40, 40, 40),
 			DropdownUnselected = Color3.fromRGB(30, 30, 30),
-
 			InputBackground = Color3.fromRGB(30, 30, 30),
 			InputStroke = Color3.fromRGB(65, 65, 65),
 			PlaceholderColor = Color3.fromRGB(178, 178, 178)
 		},
-
 		Ocean = {
 			TextColor = Color3.fromRGB(230, 240, 240),
-
 			Background = Color3.fromRGB(20, 30, 30),
 			Topbar = Color3.fromRGB(25, 40, 40),
 			Shadow = Color3.fromRGB(15, 20, 20),
-
 			NotificationBackground = Color3.fromRGB(25, 35, 35),
 			NotificationActionsBackground = Color3.fromRGB(230, 240, 240),
-
 			TabBackground = Color3.fromRGB(40, 60, 60),
 			TabStroke = Color3.fromRGB(50, 70, 70),
 			TabBackgroundSelected = Color3.fromRGB(100, 180, 180),
 			TabTextColor = Color3.fromRGB(210, 230, 230),
 			SelectedTabTextColor = Color3.fromRGB(20, 50, 50),
-
 			ElementBackground = Color3.fromRGB(30, 50, 50),
 			ElementBackgroundHover = Color3.fromRGB(40, 60, 60),
 			SecondaryElementBackground = Color3.fromRGB(30, 45, 45),
 			ElementStroke = Color3.fromRGB(45, 70, 70),
 			SecondaryElementStroke = Color3.fromRGB(40, 65, 65),
-
 			SliderBackground = Color3.fromRGB(0, 110, 110),
 			SliderProgress = Color3.fromRGB(0, 140, 140),
 			SliderStroke = Color3.fromRGB(0, 160, 160),
-
 			ToggleBackground = Color3.fromRGB(30, 50, 50),
 			ToggleEnabled = Color3.fromRGB(0, 130, 130),
 			ToggleDisabled = Color3.fromRGB(70, 90, 90),
@@ -345,41 +315,32 @@ local RayfieldLibrary = {
 			ToggleDisabledStroke = Color3.fromRGB(85, 105, 105),
 			ToggleEnabledOuterStroke = Color3.fromRGB(50, 100, 100),
 			ToggleDisabledOuterStroke = Color3.fromRGB(45, 65, 65),
-
 			DropdownSelected = Color3.fromRGB(30, 60, 60),
 			DropdownUnselected = Color3.fromRGB(25, 40, 40),
-
 			InputBackground = Color3.fromRGB(30, 50, 50),
 			InputStroke = Color3.fromRGB(50, 70, 70),
 			PlaceholderColor = Color3.fromRGB(140, 160, 160)
 		},
-
 		AmberGlow = {
 			TextColor = Color3.fromRGB(255, 245, 230),
-
 			Background = Color3.fromRGB(45, 30, 20),
 			Topbar = Color3.fromRGB(55, 40, 25),
 			Shadow = Color3.fromRGB(35, 25, 15),
-
 			NotificationBackground = Color3.fromRGB(50, 35, 25),
 			NotificationActionsBackground = Color3.fromRGB(245, 230, 215),
-
 			TabBackground = Color3.fromRGB(75, 50, 35),
 			TabStroke = Color3.fromRGB(90, 60, 45),
 			TabBackgroundSelected = Color3.fromRGB(230, 180, 100),
 			TabTextColor = Color3.fromRGB(250, 220, 200),
 			SelectedTabTextColor = Color3.fromRGB(50, 30, 10),
-
 			ElementBackground = Color3.fromRGB(60, 45, 35),
 			ElementBackgroundHover = Color3.fromRGB(70, 50, 40),
 			SecondaryElementBackground = Color3.fromRGB(55, 40, 30),
 			ElementStroke = Color3.fromRGB(85, 60, 45),
 			SecondaryElementStroke = Color3.fromRGB(75, 50, 35),
-
 			SliderBackground = Color3.fromRGB(220, 130, 60),
 			SliderProgress = Color3.fromRGB(250, 150, 75),
 			SliderStroke = Color3.fromRGB(255, 170, 85),
-
 			ToggleBackground = Color3.fromRGB(55, 40, 30),
 			ToggleEnabled = Color3.fromRGB(240, 130, 30),
 			ToggleDisabled = Color3.fromRGB(90, 70, 60),
@@ -387,41 +348,32 @@ local RayfieldLibrary = {
 			ToggleDisabledStroke = Color3.fromRGB(110, 85, 75),
 			ToggleEnabledOuterStroke = Color3.fromRGB(200, 100, 50),
 			ToggleDisabledOuterStroke = Color3.fromRGB(75, 60, 55),
-
 			DropdownSelected = Color3.fromRGB(70, 50, 40),
 			DropdownUnselected = Color3.fromRGB(55, 40, 30),
-
 			InputBackground = Color3.fromRGB(60, 45, 35),
 			InputStroke = Color3.fromRGB(90, 65, 50),
 			PlaceholderColor = Color3.fromRGB(190, 150, 130)
 		},
-
 		Light = {
 			TextColor = Color3.fromRGB(40, 40, 40),
-
 			Background = Color3.fromRGB(245, 245, 245),
 			Topbar = Color3.fromRGB(230, 230, 230),
 			Shadow = Color3.fromRGB(200, 200, 200),
-
 			NotificationBackground = Color3.fromRGB(250, 250, 250),
 			NotificationActionsBackground = Color3.fromRGB(240, 240, 240),
-
 			TabBackground = Color3.fromRGB(235, 235, 235),
 			TabStroke = Color3.fromRGB(215, 215, 215),
 			TabBackgroundSelected = Color3.fromRGB(255, 255, 255),
 			TabTextColor = Color3.fromRGB(80, 80, 80),
 			SelectedTabTextColor = Color3.fromRGB(0, 0, 0),
-
 			ElementBackground = Color3.fromRGB(240, 240, 240),
 			ElementBackgroundHover = Color3.fromRGB(225, 225, 225),
 			SecondaryElementBackground = Color3.fromRGB(235, 235, 235),
 			ElementStroke = Color3.fromRGB(210, 210, 210),
 			SecondaryElementStroke = Color3.fromRGB(210, 210, 210),
-
 			SliderBackground = Color3.fromRGB(150, 180, 220),
 			SliderProgress = Color3.fromRGB(100, 150, 200), 
 			SliderStroke = Color3.fromRGB(120, 170, 220),
-
 			ToggleBackground = Color3.fromRGB(220, 220, 220),
 			ToggleEnabled = Color3.fromRGB(0, 146, 214),
 			ToggleDisabled = Color3.fromRGB(150, 150, 150),
@@ -429,41 +381,32 @@ local RayfieldLibrary = {
 			ToggleDisabledStroke = Color3.fromRGB(170, 170, 170),
 			ToggleEnabledOuterStroke = Color3.fromRGB(100, 100, 100),
 			ToggleDisabledOuterStroke = Color3.fromRGB(180, 180, 180),
-
 			DropdownSelected = Color3.fromRGB(230, 230, 230),
 			DropdownUnselected = Color3.fromRGB(220, 220, 220),
-
 			InputBackground = Color3.fromRGB(240, 240, 240),
 			InputStroke = Color3.fromRGB(180, 180, 180),
 			PlaceholderColor = Color3.fromRGB(140, 140, 140)
 		},
-
 		Amethyst = {
 			TextColor = Color3.fromRGB(240, 240, 240),
-
 			Background = Color3.fromRGB(30, 20, 40),
 			Topbar = Color3.fromRGB(40, 25, 50),
 			Shadow = Color3.fromRGB(20, 15, 30),
-
 			NotificationBackground = Color3.fromRGB(35, 20, 40),
 			NotificationActionsBackground = Color3.fromRGB(240, 240, 250),
-
 			TabBackground = Color3.fromRGB(60, 40, 80),
 			TabStroke = Color3.fromRGB(70, 45, 90),
 			TabBackgroundSelected = Color3.fromRGB(180, 140, 200),
 			TabTextColor = Color3.fromRGB(230, 230, 240),
 			SelectedTabTextColor = Color3.fromRGB(50, 20, 50),
-
 			ElementBackground = Color3.fromRGB(45, 30, 60),
 			ElementBackgroundHover = Color3.fromRGB(50, 35, 70),
 			SecondaryElementBackground = Color3.fromRGB(40, 30, 55),
 			ElementStroke = Color3.fromRGB(70, 50, 85),
 			SecondaryElementStroke = Color3.fromRGB(65, 45, 80),
-
 			SliderBackground = Color3.fromRGB(100, 60, 150),
 			SliderProgress = Color3.fromRGB(130, 80, 180),
 			SliderStroke = Color3.fromRGB(150, 100, 200),
-
 			ToggleBackground = Color3.fromRGB(45, 30, 55),
 			ToggleEnabled = Color3.fromRGB(120, 60, 150),
 			ToggleDisabled = Color3.fromRGB(94, 47, 117),
@@ -471,41 +414,32 @@ local RayfieldLibrary = {
 			ToggleDisabledStroke = Color3.fromRGB(124, 71, 150),
 			ToggleEnabledOuterStroke = Color3.fromRGB(90, 40, 120),
 			ToggleDisabledOuterStroke = Color3.fromRGB(80, 50, 110),
-
 			DropdownSelected = Color3.fromRGB(50, 35, 70),
 			DropdownUnselected = Color3.fromRGB(35, 25, 50),
-
 			InputBackground = Color3.fromRGB(45, 30, 60),
 			InputStroke = Color3.fromRGB(80, 50, 110),
 			PlaceholderColor = Color3.fromRGB(178, 150, 200)
 		},
-
 		Green = {
 			TextColor = Color3.fromRGB(30, 60, 30),
-
 			Background = Color3.fromRGB(235, 245, 235),
 			Topbar = Color3.fromRGB(210, 230, 210),
 			Shadow = Color3.fromRGB(200, 220, 200),
-
 			NotificationBackground = Color3.fromRGB(240, 250, 240),
 			NotificationActionsBackground = Color3.fromRGB(220, 235, 220),
-
 			TabBackground = Color3.fromRGB(215, 235, 215),
 			TabStroke = Color3.fromRGB(190, 210, 190),
 			TabBackgroundSelected = Color3.fromRGB(245, 255, 245),
 			TabTextColor = Color3.fromRGB(50, 80, 50),
 			SelectedTabTextColor = Color3.fromRGB(20, 60, 20),
-
 			ElementBackground = Color3.fromRGB(225, 240, 225),
 			ElementBackgroundHover = Color3.fromRGB(210, 225, 210),
 			SecondaryElementBackground = Color3.fromRGB(235, 245, 235), 
 			ElementStroke = Color3.fromRGB(180, 200, 180),
 			SecondaryElementStroke = Color3.fromRGB(180, 200, 180),
-
 			SliderBackground = Color3.fromRGB(90, 160, 90),
 			SliderProgress = Color3.fromRGB(70, 130, 70),
 			SliderStroke = Color3.fromRGB(100, 180, 100),
-
 			ToggleBackground = Color3.fromRGB(215, 235, 215),
 			ToggleEnabled = Color3.fromRGB(60, 130, 60),
 			ToggleDisabled = Color3.fromRGB(150, 175, 150),
@@ -513,41 +447,32 @@ local RayfieldLibrary = {
 			ToggleDisabledStroke = Color3.fromRGB(130, 150, 130),
 			ToggleEnabledOuterStroke = Color3.fromRGB(100, 160, 100),
 			ToggleDisabledOuterStroke = Color3.fromRGB(160, 180, 160),
-
 			DropdownSelected = Color3.fromRGB(225, 240, 225),
 			DropdownUnselected = Color3.fromRGB(210, 225, 210),
-
 			InputBackground = Color3.fromRGB(235, 245, 235),
 			InputStroke = Color3.fromRGB(180, 200, 180),
 			PlaceholderColor = Color3.fromRGB(120, 140, 120)
 		},
-
 		Bloom = {
 			TextColor = Color3.fromRGB(60, 40, 50),
-
 			Background = Color3.fromRGB(255, 240, 245),
 			Topbar = Color3.fromRGB(250, 220, 225),
 			Shadow = Color3.fromRGB(230, 190, 195),
-
 			NotificationBackground = Color3.fromRGB(255, 235, 240),
 			NotificationActionsBackground = Color3.fromRGB(245, 215, 225),
-
 			TabBackground = Color3.fromRGB(240, 210, 220),
 			TabStroke = Color3.fromRGB(230, 200, 210),
 			TabBackgroundSelected = Color3.fromRGB(255, 225, 235),
 			TabTextColor = Color3.fromRGB(80, 40, 60),
 			SelectedTabTextColor = Color3.fromRGB(50, 30, 50),
-
 			ElementBackground = Color3.fromRGB(255, 235, 240),
 			ElementBackgroundHover = Color3.fromRGB(245, 220, 230),
 			SecondaryElementBackground = Color3.fromRGB(255, 235, 240), 
 			ElementStroke = Color3.fromRGB(230, 200, 210),
 			SecondaryElementStroke = Color3.fromRGB(230, 200, 210),
-
 			SliderBackground = Color3.fromRGB(240, 130, 160),
 			SliderProgress = Color3.fromRGB(250, 160, 180),
 			SliderStroke = Color3.fromRGB(255, 180, 200),
-
 			ToggleBackground = Color3.fromRGB(240, 210, 220),
 			ToggleEnabled = Color3.fromRGB(255, 140, 170),
 			ToggleDisabled = Color3.fromRGB(200, 180, 185),
@@ -555,41 +480,32 @@ local RayfieldLibrary = {
 			ToggleDisabledStroke = Color3.fromRGB(210, 180, 190),
 			ToggleEnabledOuterStroke = Color3.fromRGB(220, 160, 180),
 			ToggleDisabledOuterStroke = Color3.fromRGB(190, 170, 180),
-
 			DropdownSelected = Color3.fromRGB(250, 220, 225),
 			DropdownUnselected = Color3.fromRGB(240, 210, 220),
-
 			InputBackground = Color3.fromRGB(255, 235, 240),
 			InputStroke = Color3.fromRGB(220, 190, 200),
 			PlaceholderColor = Color3.fromRGB(170, 130, 140)
 		},
-
 		DarkBlue = {
 			TextColor = Color3.fromRGB(230, 230, 230),
-
 			Background = Color3.fromRGB(20, 25, 30),
 			Topbar = Color3.fromRGB(30, 35, 40),
 			Shadow = Color3.fromRGB(15, 20, 25),
-
 			NotificationBackground = Color3.fromRGB(25, 30, 35),
 			NotificationActionsBackground = Color3.fromRGB(45, 50, 55),
-
 			TabBackground = Color3.fromRGB(35, 40, 45),
 			TabStroke = Color3.fromRGB(45, 50, 60),
 			TabBackgroundSelected = Color3.fromRGB(40, 70, 100),
 			TabTextColor = Color3.fromRGB(200, 200, 200),
 			SelectedTabTextColor = Color3.fromRGB(255, 255, 255),
-
 			ElementBackground = Color3.fromRGB(30, 35, 40),
 			ElementBackgroundHover = Color3.fromRGB(40, 45, 50),
 			SecondaryElementBackground = Color3.fromRGB(35, 40, 45), 
 			ElementStroke = Color3.fromRGB(45, 50, 60),
 			SecondaryElementStroke = Color3.fromRGB(40, 45, 55),
-
 			SliderBackground = Color3.fromRGB(0, 90, 180),
 			SliderProgress = Color3.fromRGB(0, 120, 210),
 			SliderStroke = Color3.fromRGB(0, 150, 240),
-
 			ToggleBackground = Color3.fromRGB(35, 40, 45),
 			ToggleEnabled = Color3.fromRGB(0, 120, 210),
 			ToggleDisabled = Color3.fromRGB(70, 70, 80),
@@ -597,40 +513,32 @@ local RayfieldLibrary = {
 			ToggleDisabledStroke = Color3.fromRGB(75, 75, 85),
 			ToggleEnabledOuterStroke = Color3.fromRGB(20, 100, 180), 
 			ToggleDisabledOuterStroke = Color3.fromRGB(55, 55, 65),
-
 			DropdownSelected = Color3.fromRGB(30, 70, 90),
 			DropdownUnselected = Color3.fromRGB(25, 30, 35),
-
 			InputBackground = Color3.fromRGB(25, 30, 35),
 			InputStroke = Color3.fromRGB(45, 50, 60), 
 			PlaceholderColor = Color3.fromRGB(150, 150, 160)
 		},
-
 		Serenity = {
 			TextColor = Color3.fromRGB(50, 55, 60),
 			Background = Color3.fromRGB(240, 245, 250),
 			Topbar = Color3.fromRGB(215, 225, 235),
 			Shadow = Color3.fromRGB(200, 210, 220),
-
 			NotificationBackground = Color3.fromRGB(210, 220, 230),
 			NotificationActionsBackground = Color3.fromRGB(225, 230, 240),
-
 			TabBackground = Color3.fromRGB(200, 210, 220),
 			TabStroke = Color3.fromRGB(180, 190, 200),
 			TabBackgroundSelected = Color3.fromRGB(175, 185, 200),
 			TabTextColor = Color3.fromRGB(50, 55, 60),
 			SelectedTabTextColor = Color3.fromRGB(30, 35, 40),
-
 			ElementBackground = Color3.fromRGB(210, 220, 230),
 			ElementBackgroundHover = Color3.fromRGB(220, 230, 240),
 			SecondaryElementBackground = Color3.fromRGB(200, 210, 220),
 			ElementStroke = Color3.fromRGB(190, 200, 210),
 			SecondaryElementStroke = Color3.fromRGB(180, 190, 200),
-
-			SliderBackground = Color3.fromRGB(200, 220, 235),  -- Lighter shade
+			SliderBackground = Color3.fromRGB(200, 220, 235),
 			SliderProgress = Color3.fromRGB(70, 130, 180),
 			SliderStroke = Color3.fromRGB(150, 180, 220),
-
 			ToggleBackground = Color3.fromRGB(210, 220, 230),
 			ToggleEnabled = Color3.fromRGB(70, 160, 210),
 			ToggleDisabled = Color3.fromRGB(180, 180, 180),
@@ -638,21 +546,14 @@ local RayfieldLibrary = {
 			ToggleDisabledStroke = Color3.fromRGB(140, 140, 140),
 			ToggleEnabledOuterStroke = Color3.fromRGB(100, 120, 140),
 			ToggleDisabledOuterStroke = Color3.fromRGB(120, 120, 130),
-
 			DropdownSelected = Color3.fromRGB(220, 230, 240),
 			DropdownUnselected = Color3.fromRGB(200, 210, 220),
-
 			InputBackground = Color3.fromRGB(220, 230, 240),
 			InputStroke = Color3.fromRGB(180, 190, 200),
 			PlaceholderColor = Color3.fromRGB(150, 150, 150)
 		},
 	}
 }
-
-
-
-
--- Interface Management
 
 local RayfieldAssetId = customAssetId or 75623004084296
 local buildAttempts = 0
@@ -691,7 +592,6 @@ elseif not useStudio then
 	end
 end
 
--- Added Loading Text
 local LoadingAssetsLabel = Instance.new("TextLabel")
 LoadingAssetsLabel.Name = "AssetLoadingLabel"
 LoadingAssetsLabel.Parent = Rayfield
@@ -699,28 +599,26 @@ LoadingAssetsLabel.BackgroundColor3 = Color3.new(0, 0, 0)
 LoadingAssetsLabel.BackgroundTransparency = 1
 LoadingAssetsLabel.Size = UDim2.new(1, 0, 0, 30)
 LoadingAssetsLabel.Position = UDim2.new(0, 0, 0, 10)
-LoadingAssetsLabel.Text = "Loading Assets" -- Start with no dots
+LoadingAssetsLabel.Text = "Loading Assets"
 LoadingAssetsLabel.TextColor3 = Color3.new(1, 1, 1)
 LoadingAssetsLabel.TextSize = 26
 LoadingAssetsLabel.Font = Enum.Font.SourceSansBold
 LoadingAssetsLabel.ZIndex = 10000
 Rayfield.Enabled = true 
 
--- Updated Dot Animation Logic
 task.spawn(function()
-    -- Sequence: None -> . -> .. -> ... -> .. -> .
-    local animFrames = {"", ".", "..", "...", "..", "."}
-    local index = 1
-    
-    while LoadingAssetsLabel and LoadingAssetsLabel.Parent do
-        LoadingAssetsLabel.Text = "Loading Assets" .. animFrames[index]
-        index = (index % #animFrames) + 1
-        task.wait(0.4) -- Slightly slower wait for a smoother "ping-pong" effect
-    end
+	local animFrames = {"", ".", "..", "...", "..", "."}
+	local index = 1
+	
+	while LoadingAssetsLabel and LoadingAssetsLabel.Parent do
+		LoadingAssetsLabel.Text = "Loading Assets" .. animFrames[index]
+		index = (index % #animFrames) + 1
+		task.wait(0.4)
+	end
 end)
 
 do
-    local AssetPath = RayfieldFolder.."/Assets"
+	local AssetPath = RayfieldFolder.."/Assets"
 	local AssetBaseURL = "https://github.com/stewingit/stewfield/blob/main/assets/"
 
 	local assetFiles = {
@@ -794,31 +692,29 @@ do
 		secureNotify("no_getcustomasset", "Rayfield", "Your executor does not support getcustomasset. Some UI images may not render correctly.")
 	end
 
-
-Rayfield.Main.Shadow.Image.Image = customAssets["line3"]
-Rayfield.Main.Topbar.Hide.Image = customAssets["close"]
-Rayfield.Main.Topbar.ChangeSize.Image = customAssets["minimise"]
-Rayfield.Main.Topbar.Settings.Image = customAssets["settings"]
-Rayfield.Main.Topbar.Icon.Image = customAssets["arrow"]
-Rayfield.Main.Topbar.Search.Image = customAssets["search"]
-Rayfield.Main.Topbar.Search.ImageRectOffset = Vector2.new(0, 0)
-Rayfield.Main.Topbar.Search.ImageRectSize = Vector2.new(0, 0)
-Rayfield.Main.Elements.Template.Toggle.Switch.Shadow.Image = customAssets["line2"]
-Rayfield.Main.Elements.Template.Slider.Main.Shadow.Image = customAssets["line2"]
-Rayfield.Main.Elements.Template.Dropdown.Toggle.Image = customAssets["up"]
-Rayfield.Main.Elements.Template.Dropdown.Toggle.ImageRectOffset = Vector2.new(0, 0)
-Rayfield.Main.Elements.Template.Dropdown.Toggle.ImageRectSize = Vector2.new(0, 0)
-Rayfield.Main.Elements.Template.Label.Icon.Image = customAssets["warning"]
-Rayfield.Main.Elements.Template.ColorPicker.CPBackground.MainCP.Image = customAssets["blank"]
-Rayfield.Main.Elements.Template.ColorPicker.CPBackground.MainCP.MainPoint.Image = customAssets["dot"]
-Rayfield.Main.Elements.Template.ColorPicker.ColorSlider.SliderPoint.Image = customAssets["dot"]
-Rayfield.Main.TabList.Template.Image.Image = customAssets["cube"]
-Rayfield.Main.Search.Search.Image = customAssets["search"]
-Rayfield.Main.Search.Shadow.Image = customAssets["line3"]
-Rayfield.Notifications.Template.Icon.Image = customAssets["warning"]
-Rayfield.Notifications.Template.Shadow.Image = customAssets["line"]
-
-end -- custom asset block
+	Rayfield.Main.Shadow.Image.Image = customAssets["line3"]
+	Rayfield.Main.Topbar.Hide.Image = customAssets["close"]
+	Rayfield.Main.Topbar.ChangeSize.Image = customAssets["minimise"]
+	Rayfield.Main.Topbar.Settings.Image = customAssets["settings"]
+	Rayfield.Main.Topbar.Icon.Image = customAssets["arrow"]
+	Rayfield.Main.Topbar.Search.Image = customAssets["search"]
+	Rayfield.Main.Topbar.Search.ImageRectOffset = Vector2.new(0, 0)
+	Rayfield.Main.Topbar.Search.ImageRectSize = Vector2.new(0, 0)
+	Rayfield.Main.Elements.Template.Toggle.Switch.Shadow.Image = customAssets["line2"]
+	Rayfield.Main.Elements.Template.Slider.Main.Shadow.Image = customAssets["line2"]
+	Rayfield.Main.Elements.Template.Dropdown.Toggle.Image = customAssets["up"]
+	Rayfield.Main.Elements.Template.Dropdown.Toggle.ImageRectOffset = Vector2.new(0, 0)
+	Rayfield.Main.Elements.Template.Dropdown.Toggle.ImageRectSize = Vector2.new(0, 0)
+	Rayfield.Main.Elements.Template.Label.Icon.Image = customAssets["warning"]
+	Rayfield.Main.Elements.Template.ColorPicker.CPBackground.MainCP.Image = customAssets["blank"]
+	Rayfield.Main.Elements.Template.ColorPicker.CPBackground.MainCP.MainPoint.Image = customAssets["dot"]
+	Rayfield.Main.Elements.Template.ColorPicker.ColorSlider.SliderPoint.Image = customAssets["dot"]
+	Rayfield.Main.TabList.Template.Image.Image = customAssets["cube"]
+	Rayfield.Main.Search.Search.Image = customAssets["search"]
+	Rayfield.Main.Search.Shadow.Image = customAssets["line3"]
+	Rayfield.Notifications.Template.Icon.Image = customAssets["warning"]
+	Rayfield.Notifications.Template.Shadow.Image = customAssets["line"]
+end
 
 local minSize = Vector2.new(1024, 768)
 local useMobileSizing
@@ -831,9 +727,6 @@ local useMobilePrompt = false
 if UserInputService.TouchEnabled then
 	useMobilePrompt = true
 end
-
-
--- Object Variables
 
 local Main = Rayfield.Main
 local MPrompt = Rayfield:FindFirstChild('Prompt')
@@ -849,12 +742,10 @@ local dragOffset = 255
 local dragOffsetMobile = 150
 
 Rayfield.DisplayOrder = 100
-LoadingFrame.Visible = false -- User Edit
+LoadingFrame.Visible = false
 LoadingFrame.Version.Text = Release
 
--- Thanks to Latte Softworks for the Lucide integration for Roblox
 local Icons = useStudio and require(script.Parent.icons) or loadWithTimeout('https://raw.githubusercontent.com/stewingit/stewfield/refs/heads/main/icons.lua')
--- Variables
 
 local CFileName = nil
 local CEnabled = false
@@ -863,7 +754,7 @@ local Hidden = false
 local Debounce = false
 local searchOpen = false
 local Notifications = Rayfield.Notifications
-local keybindConnections = {} -- For storing keybind connections to disconnect when Rayfield is destroyed
+local keybindConnections = {}
 
 local SelectedTheme = RayfieldLibrary.Theme.Default
 
@@ -1057,7 +948,6 @@ local function makeDraggable(object, dragObject, enableTaptic, tapticOffset)
 	end)
 end
 
-
 local function PackColor(Color)
 	return {R = Color.R * 255, G = Color.G * 255, B = Color.B * 255}
 end    
@@ -1072,7 +962,6 @@ local function LoadConfiguration(Configuration)
 
 	if not success then warn('Stewfield had an issue decoding the configuration file, please try delete the file and reopen Stewfield.') return end
 
-	-- Iterate through current UI elements' flags
 	for FlagName, Flag in pairs(RayfieldLibrary.Flags) do
 		local FlagValue = Data[FlagName]
 
@@ -1091,7 +980,6 @@ local function LoadConfiguration(Configuration)
 		else
 			warn("Stewfield | Unable to find '"..FlagName.. "' in the save file.")
 			print("The error above may not be an issue if new elements have been added or not been set values.")
-			--RayfieldLibrary:Notify({Title = "Rayfield Flags", Content = "Rayfield was unable to find '"..FlagName.. "' in the save file. Check sirius.menu/discord for help.", Image = 3944688398})
 		end
 	end
 
@@ -1142,21 +1030,17 @@ local function SaveConfiguration()
 		warn(HttpService:JSONEncode(Data))
 	end
 
-
 	callSafely(writefile, ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension, tostring(HttpService:JSONEncode(Data)))
 end
 
-function RayfieldLibrary:Notify(data) -- action e.g open messages
+function RayfieldLibrary:Notify(data)
 	task.spawn(function()
-
-		-- Notification Object Creation
 		local newNotification = Notifications.Template:Clone()
 		newNotification.Name = data.Title or 'No Title Provided'
 		newNotification.Parent = Notifications
 		newNotification.LayoutOrder = #Notifications:GetChildren()
 		newNotification.Visible = false
 
-		-- Set Data
 		newNotification.Title.Text = data.Title or "Unknown Title"
 		newNotification.Description.Text = data.Content or "Unknown Content"
 
@@ -1168,8 +1052,6 @@ function RayfieldLibrary:Notify(data) -- action e.g open messages
 		else
 			newNotification.Icon.Image = ""
 		end
-
-		-- Set initial transparency values
 
 		newNotification.Title.TextColor3 = SelectedTheme.TextColor
 		newNotification.Description.TextColor3 = SelectedTheme.TextColor
@@ -1195,7 +1077,6 @@ function RayfieldLibrary:Notify(data) -- action e.g open messages
 			print("Notification Actions are being sunset for now, keep up to date on when they're back in the discord. (sirius.menu/discord)")
 		end
 
-		-- Calculate textbounds and set initial values
 		local bounds = {newNotification.Title.TextBounds.Y, newNotification.Description.TextBounds.Y}
 		newNotification.Size = UDim2.new(1, -60, 0, -Notifications:FindFirstChild("UIListLayout").Padding.Offset)
 
@@ -1239,13 +1120,12 @@ function RayfieldLibrary:Notify(data) -- action e.g open messages
 end
 
 local preSearchPage = nil
-local closeSearch -- Forward declaration to fix scope nil error
+local closeSearch
 
 local function openSearch()
 	searchOpen = true
 	preSearchPage = Elements.UIPageLayout.CurrentPage
 
-	-- Create Search Results tab if it doesn't exist
 	local searchTab = Elements:FindFirstChild("Search Results")
 	if not searchTab then
 		searchTab = Elements.Template:Clone()
@@ -1255,14 +1135,12 @@ local function openSearch()
 		searchTab.Parent = Elements
 	end
 
-	-- Clear old buttons inside the search tab
 	for _, child in ipairs(searchTab:GetChildren()) do
 		if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
 			child:Destroy()
 		end
 	end
 
-	-- Populate buttons for each tab
 	for _, tabbtn in ipairs(TabList:GetChildren()) do
 		if tabbtn.ClassName == "Frame" and tabbtn.Name ~= "Placeholder" and tabbtn.Name ~= "Template" and tabbtn.Name ~= "Rayfield Settings" then
 			local tabName = tabbtn.Name
@@ -1272,7 +1150,6 @@ local function openSearch()
 			btn.Visible = true
 			btn.Parent = searchTab
 			
-			-- Force correct visual properties
 			btn.BackgroundTransparency = 0
 			btn.UIStroke.Transparency = 0
 			btn.Title.TextTransparency = 0
@@ -1287,11 +1164,10 @@ local function openSearch()
 				TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
 			end)
 
-			-- Navigation Logic
 			btn.Interact.MouseButton1Click:Connect(function()
 				local targetTab = Elements:FindFirstChild(tabName)
 				if targetTab then
-					preSearchPage = targetTab -- Set our return destination to the clicked tab
+					preSearchPage = targetTab
 				end
 				closeSearch()
 			end)
@@ -1336,7 +1212,6 @@ closeSearch = function()
 	searchOpen = false
 	
 	local targetPageName = nil
-	-- Navigate safely out of the search tab
 	if Elements.UIPageLayout.CurrentPage and Elements.UIPageLayout.CurrentPage.Name == "Search Results" and preSearchPage then
 		Elements.UIPageLayout.Animated = false
 		Elements.UIPageLayout:JumpTo(preSearchPage)
@@ -1361,7 +1236,6 @@ closeSearch = function()
 				TweenService:Create(tabbtn.Title, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0, TextColor3 = SelectedTheme.SelectedTabTextColor}):Play()
 				TweenService:Create(tabbtn.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 				
-				-- Automatically scroll the TabList to center the selected tab
 				if TabList:IsA("ScrollingFrame") then
 					local targetX = tabbtn.AbsolutePosition.X - TabList.AbsolutePosition.X + TabList.CanvasPosition.X - (TabList.AbsoluteSize.X / 2) + (tabbtn.AbsoluteSize.X / 2)
 					local maxScroll = math.max(0, TabList.AbsoluteCanvasSize.X - TabList.AbsoluteSize.X)
@@ -1382,7 +1256,6 @@ closeSearch = function()
 	Main.Search.Input.Interactable = false
 end
 
--- Sets element visibility across all tab pages (used by Hide, Unhide, Maximise, Minimise)
 local function setElementsVisible(show)
 	for _, tab in ipairs(Elements:GetChildren()) do
 		if tab.Name ~= "Template" and tab.ClassName == "ScrollingFrame" and tab.Name ~= "Placeholder" then
@@ -1410,7 +1283,6 @@ local function setElementsVisible(show)
 	end
 end
 
--- Sets tab button visibility (used by Hide, Unhide, Maximise, Minimise)
 local function setTabButtonsVisible(show)
 	for _, tabbtn in ipairs(TabList:GetChildren()) do
 		if tabbtn.ClassName == "Frame" and tabbtn.Name ~= "Placeholder" then
@@ -1518,7 +1390,6 @@ local function Maximise()
 	Debounce = false
 end
 
-
 local function Unhide()
 	Debounce = true
 	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -1601,19 +1472,23 @@ local function Minimise()
 	Debounce = false
 end
 
-local function saveSettings() -- Save settings to file
-	local encoded
-	local success, err = pcall(function()
-		encoded = HttpService:JSONEncode(settingsTable)
+local function saveSettings()
+	local saveTable = {}
+	for catName, category in pairs(settingsTable) do
+		saveTable[catName] = {}
+		for setName, setting in pairs(category) do
+			saveTable[catName][setName] = { Value = setting.Value }
+		end
+	end
+
+	local success, encoded = pcall(function()
+		return HttpService:JSONEncode(saveTable)
 	end)
 
 	if success then
-		if useStudio then
-			if script.Parent['get.val'] then
-				script.Parent['get.val'].Value = encoded
-			end
+		if useStudio and script.Parent and script.Parent:FindFirstChild('get.val') then
+			script.Parent['get.val'].Value = encoded
 		end
-		-- Only save to the unique SettingsId file to prevent cross-script overwriting
 		callSafely(writefile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension, encoded)
 	end
 end
@@ -1623,7 +1498,7 @@ local function updateSetting(category: string, setting: string, value: any)
 		return
 	end
 	settingsTable[category][setting].Value = value
-	overriddenSettings[category .. "." .. setting] = nil -- If user changes an overriden setting, remove the override
+	overriddenSettings[category .. "." .. setting] = nil
 	saveSettings()
 end
 
@@ -1645,7 +1520,6 @@ local function createSettings(window)
 		Elements['Rayfield Settings'].LayoutOrder = 1000
 	end
 
-	-- Create sections and elements
 	for categoryName, settingCategory in pairs(settingsTable) do
 		newTab:CreateSection(categoryName)
 
@@ -1690,7 +1564,6 @@ local function createSettings(window)
 					Ext = true,
 					Callback = function(Value)
 						updateSetting(categoryName, settingName, Value)
-						-- Update the theme visually in real-time
 						if settingName == "theme" then
 							local selectedTheme = type(Value) == "table" and Value[1] or Value
 							pcall(ChangeTheme, selectedTheme)
@@ -1725,13 +1598,13 @@ function RayfieldLibrary:CreateWindow(Settings)
 	if Rayfield:FindFirstChild('Loading') then
 		if getgenv and not getgenv().rayfieldCached then
 			Rayfield.Enabled = true
-			Rayfield.Loading.Visible = false -- User Edit: Instant load
+			Rayfield.Loading.Visible = false
 		end
 	end
 
 	if getgenv then getgenv().rayfieldCached = true end
 
-	if Settings.ToggleUIKeybind then -- Can either be a string or an Enum.KeyCode
+	if Settings.ToggleUIKeybind then
 		local keybind = Settings.ToggleUIKeybind
 		if type(keybind) == "string" then
 			keybind = string.upper(keybind)
@@ -1796,8 +1669,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 	if Settings.Theme then
 		local success, result = pcall(ChangeTheme, Settings.Theme)
 		if not success then
-			local success, result2 = pcall(ChangeTheme, 'Default')
-			if not success then
+			local success2, result2 = pcall(ChangeTheme, 'Default')
+			if not success2 then
 				warn('CRITICAL ERROR - NO DEFAULT THEME')
 				print(result2)
 			end
@@ -1806,20 +1679,17 @@ function RayfieldLibrary:CreateWindow(Settings)
 		end
 	end
 
-Topbar.Visible = false
+	Topbar.Visible = false
 	Elements.Visible = false
 	LoadingFrame.Visible = true
 
-	-- 1. ALWAYS handle the SettingsId first, regardless of ConfigurationSaving
 	if Settings.SettingsId and type(Settings.SettingsId) == "string" and Settings.SettingsId ~= "" then
 		currentSettingsName = Settings.SettingsId .. "_settings"
 	else
 		currentSettingsName = "Default_settings"
 	end
 
-	-- 2. Safely handle ConfigurationSaving (Element flags)
 	pcall(function()
-		-- Prevent errors if the user completely removed the ConfigurationSaving table
 		if not Settings.ConfigurationSaving then
 			Settings.ConfigurationSaving = { Enabled = false }
 		end
@@ -1841,17 +1711,18 @@ Topbar.Visible = false
 		end
 	end)
 
-	-- Reload core UI settings now that the file name is properly set
 	loadSettings()
 	
-	-- NEW: Override the script's requested theme with the user's saved theme if available
 	local savedTheme = getSetting("General", "theme")
 	if savedTheme then
 		Settings.Theme = type(savedTheme) == "table" and savedTheme[1] or savedTheme
 	end
 
 	makeDraggable(Main, Topbar, false, {dragOffset, dragOffsetMobile})
-	if dragBar then dragBar.Position = useMobileSizing and UDim2.new(0.5, 0, 0.5, dragOffsetMobile) or UDim2.new(0.5, 0, 0.5, dragOffset) makeDraggable(Main, dragInteract, true, {dragOffset, dragOffsetMobile}) end
+	if dragBar then 
+		dragBar.Position = useMobileSizing and UDim2.new(0.5, 0, 0.5, dragOffsetMobile) or UDim2.new(0.5, 0, 0.5, dragOffset) 
+		makeDraggable(Main, dragInteract, true, {dragOffset, dragOffsetMobile}) 
+	end
 
 	for _, TabButton in ipairs(TabList:GetChildren()) do
 		if TabButton.ClassName == "Frame" and TabButton.Name ~= "Placeholder" then
@@ -1884,7 +1755,7 @@ Topbar.Visible = false
 				end)
 			end
 
-			if Settings.Discord.RememberJoins then -- We do logic this way so if the developer changes this setting, the user still won't be prompted, only new users
+			if Settings.Discord.RememberJoins then
 				callSafely(writefile, RayfieldFolder.."/Discord Invites".."/"..Settings.Discord.Invite..ConfigurationExtension,"Rayfield RememberJoins is true for this invite, this invite will not ask you to join again")
 			end
 		end
@@ -2001,13 +1872,11 @@ Topbar.Visible = false
 			task.wait(0.15)
 			TweenService:Create(KeyMain.Hide, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {ImageTransparency = 0.3}):Play()
 
-
 			KeyUI.Main.Input.InputBox.FocusLost:Connect(function()
 				if #KeyUI.Main.Input.InputBox.Text == 0 then return end
 				local KeyFound = false
 				local FoundKey = ''
 				for _, MKey in ipairs(Settings.KeySettings.Key) do
-					-- stricter key check
 					if KeyMain.Input.InputBox.Text == MKey then
 						KeyFound = true
 						FoundKey = MKey
@@ -2071,14 +1940,12 @@ Topbar.Visible = false
 	task.wait(0.05)
 	TweenService:Create(LoadingFrame.Version, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
 
-
 	Elements.Template.LayoutOrder = 100000
 	Elements.Template.Visible = false
 
 	Elements.UIPageLayout.FillDirection = Enum.FillDirection.Horizontal
 	TabList.Template.Visible = false
 
-	-- Tab
 	local FirstTab = false
 	local Window = {}
 	function Window:CreateTab(Name, Image, Ext)
@@ -2103,8 +1970,6 @@ Topbar.Visible = false
 			TabButton.Size = UDim2.new(0, TabButton.Title.TextBounds.X + 52, 0, 30)
 		end
 
-
-
 		TabButton.BackgroundTransparency = 1
 		TabButton.Title.TextTransparency = 1
 		TabButton.Image.ImageTransparency = 1
@@ -2112,7 +1977,6 @@ Topbar.Visible = false
 
 		TabButton.Visible = not Ext or false
 
-		-- Create Elements Page
 		local TabPage = Elements.Template:Clone()
 		TabPage.Name = Name
 		TabPage.Visible = true
@@ -2127,7 +1991,6 @@ Topbar.Visible = false
 
 		TabPage.Parent = Elements
 		
-		-- NEW LOGIC: Check if this tab is the saved target tab
 		local isTargetTab = false
 		local shouldRemember = getSetting("General", "rememberTab")
 		local savedTab = getSetting("General", "lastTab")
@@ -2137,7 +2000,6 @@ Topbar.Visible = false
 				isTargetTab = true
 			end
 		elseif not FirstTab then
-			-- Fallback to the first tab created if the setting is off or empty
 			isTargetTab = true
 		end
 
@@ -2159,7 +2021,6 @@ Topbar.Visible = false
 			TabButton.Title.TextColor3 = SelectedTheme.TabTextColor
 		end
 
-		-- Animate
 		task.wait(0.1)
 		if not isTargetTab or Ext then
 			TabButton.BackgroundColor3 = SelectedTheme.TabBackground
@@ -2170,7 +2031,7 @@ Topbar.Visible = false
 			TweenService:Create(TabButton.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.2}):Play()
 			TweenService:Create(TabButton.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
 		elseif not Ext then
-			if not FirstTab then FirstTab = Name end -- Keep FirstTab initialized for other internal library features
+			if not FirstTab then FirstTab = Name end
 			TabButton.BackgroundColor3 = SelectedTheme.TabBackgroundSelected
 			TabButton.Image.ImageColor3 = SelectedTheme.SelectedTabTextColor
 			TabButton.Title.TextColor3 = SelectedTheme.SelectedTabTextColor
@@ -2178,7 +2039,6 @@ Topbar.Visible = false
 			TweenService:Create(TabButton, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
 			TweenService:Create(TabButton.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
 			
-			-- Automatically scroll the TabList so the loaded tab is center-screen
 			if TabList:IsA("ScrollingFrame") then
 				local targetX = TabButton.AbsolutePosition.X - TabList.AbsolutePosition.X + TabList.CanvasPosition.X - (TabList.AbsoluteSize.X / 2) + (TabButton.AbsoluteSize.X / 2)
 				local maxScroll = math.max(0, TabList.AbsoluteCanvasSize.X - TabList.AbsoluteSize.X)
@@ -2186,7 +2046,6 @@ Topbar.Visible = false
 				TweenService:Create(TabList, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {CanvasPosition = Vector2.new(targetX, 0)}):Play()
 			end
 		end
-
 
 		TabButton.Interact.MouseButton1Click:Connect(function()
 			if Minimised then return end
@@ -2220,7 +2079,6 @@ Topbar.Visible = false
 
 		local Tab = {}
 
-		-- Button
 		function Tab:CreateButton(ButtonSettings)
 			local ButtonValue = {}
 
@@ -2238,10 +2096,8 @@ Topbar.Visible = false
 			TweenService:Create(Button.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 			TweenService:Create(Button.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
 
-
 			Button.Interact.MouseButton1Click:Connect(function()
 				local Success, Response = pcall(ButtonSettings.Callback)
-				-- Prevents animation from trying to play if the button's callback called RayfieldLibrary:Destroy()
 				if rayfieldDestroyed then
 					return
 				end
@@ -2286,7 +2142,6 @@ Topbar.Visible = false
 				Button.Name = NewButton
 			end
 
-			-- Destroy Function
 			function ButtonValue:Destroy()
 				if Button then
 					Button:Destroy()
@@ -2297,7 +2152,6 @@ Topbar.Visible = false
 			return ButtonValue
 		end
 
-		-- ColorPicker
 		function Tab:CreateColorPicker(ColorPickerSettings)
 			ColorPickerSettings.Type = "ColorPicker"
 			local ColorPicker = Elements.Template.ColorPicker:Clone()
@@ -2333,7 +2187,7 @@ Topbar.Visible = false
 
 			local opened = false 
 			local mouse = Players.LocalPlayer:GetMouse()
-			Main.Image = "http://www.roblox.com/asset/?id=11415645739" -- User Edit: Custom image
+			Main.Image = "http://www.roblox.com/asset/?id=11415645739"
 			local mainDragging = false 
 			local sliderDragging = false 
 			ColorPicker.Interact.MouseButton1Down:Connect(function()
@@ -2372,13 +2226,14 @@ Topbar.Visible = false
 					TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
 					TweenService:Create(Background, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
 				end
-
 			end)
 
-			local colorPickerInputConnection = UserInputService.InputEnded:Connect(function(input, gameProcessed) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			local colorPickerInputConnection = UserInputService.InputEnded:Connect(function(input, gameProcessed) 
+				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 					mainDragging = false
 					sliderDragging = false
-				end end)
+				end 
+			end)
 			Main.MouseButton1Down:Connect(function()
 				if opened then
 					mainDragging = true 
@@ -2400,12 +2255,10 @@ Topbar.Visible = false
 			local hex = string.format("#%02X%02X%02X",color.R*0xFF,color.G*0xFF,color.B*0xFF)
 			ColorPicker.HexInput.InputBox.Text = hex
 			local function setDisplay()
-				--Main
 				Main.MainPoint.Position = UDim2.new(s,-Main.MainPoint.AbsoluteSize.X/2,1-v,-Main.MainPoint.AbsoluteSize.Y/2)
 				Main.MainPoint.ImageColor3 = Color3.fromHSV(h,s,v)
 				Background.BackgroundColor3 = Color3.fromHSV(h,1,1)
 				Display.BackgroundColor3 = Color3.fromHSV(h,s,v)
-				--Slider 
 				local x = h * Slider.AbsoluteSize.X
 				Slider.SliderPoint.Position = UDim2.new(0,x-Slider.SliderPoint.AbsoluteSize.X/2,0.5,0)
 				Slider.SliderPoint.ImageColor3 = Color3.fromHSV(h,1,1)
@@ -2437,7 +2290,6 @@ Topbar.Visible = false
 					SaveConfiguration()
 				end
 			end)
-			--RGB
 			local function rgbBoxes(box,toChange)
 				local value = tonumber(box.Text) 
 				local color = Color3.fromHSV(h,s,v) 
@@ -2447,7 +2299,6 @@ Topbar.Visible = false
 				if value then 
 					value = math.clamp(value,0,255)
 					h,s,v = Color3.fromRGB(oldR,oldG,oldB):ToHSV()
-
 					setDisplay()
 				else 
 					box.Text = tostring(save)
@@ -2560,10 +2411,9 @@ Topbar.Visible = false
 			return ColorPickerSettings
 		end
 
-		-- Section
 		function Tab:CreateSection(SectionName)
 			local SectionValue = {}
-			local SectionSpace -- Defined here so the Destroy function can access it
+			local SectionSpace
 
 			if SDone then
 				SectionSpace = Elements.Template.SectionSpacing:Clone()
@@ -2579,14 +2429,12 @@ Topbar.Visible = false
 			Section.Title.TextTransparency = 1
 			TweenService:Create(Section.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0.4}):Play()
 
-			-- User Edit: Update Section Text
 			function SectionValue:Set(NewSection)
 				if Section then
 					Section.Title.Text = NewSection
 				end
 			end
 
-			-- User Edit: Delete Section Command
 			function SectionValue:Destroy()
 				if Section then
 					Section:Destroy()
@@ -2603,7 +2451,6 @@ Topbar.Visible = false
 			return SectionValue
 		end
 
-		-- Divider
 		function Tab:CreateDivider()
 			local DividerValue = {}
 
@@ -2621,7 +2468,6 @@ Topbar.Visible = false
 			return DividerValue
 		end
 
-		-- Label
 		function Tab:CreateLabel(LabelText : string, Icon: number, Color : Color3, IgnoreTheme : boolean)
 			local LabelValue = {}
 
@@ -2658,7 +2504,6 @@ Topbar.Visible = false
 			TweenService:Create(Label.Icon, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.2}):Play()
 			TweenService:Create(Label.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = Color and 0.2 or 0}):Play()	
 
-			-- User Edit: Update Label Text
 			function LabelValue:Set(NewLabel, Icon, Color)
 				if Label then
 					Label.Title.Text = NewLabel
@@ -2682,7 +2527,6 @@ Topbar.Visible = false
 				end
 			end
 
-			-- User Edit: Delete Label Command
 			function LabelValue:Destroy()
 				if Label then
 					Label:Destroy()
@@ -2700,7 +2544,6 @@ Topbar.Visible = false
 			return LabelValue
 		end
 
-		-- Paragraph
 		function Tab:CreateParagraph(ParagraphSettings)
 			local ParagraphValue = {}
 
@@ -2723,7 +2566,6 @@ Topbar.Visible = false
 			TweenService:Create(Paragraph.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
 			TweenService:Create(Paragraph.Content, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
 
-			-- User Edit: Update Paragraph
 			function ParagraphValue:Set(NewParagraphSettings)
 				if Paragraph then
 					Paragraph.Title.Text = NewParagraphSettings.Title
@@ -2731,7 +2573,6 @@ Topbar.Visible = false
 				end
 			end
 
-			-- User Edit: Delete Paragraph Command
 			function ParagraphValue:Destroy()
 				if Paragraph then
 					Paragraph:Destroy()
@@ -2749,7 +2590,6 @@ Topbar.Visible = false
 			return ParagraphValue
 		end
 
-		-- Input
 		function Tab:CreateInput(InputSettings)
 			local Input = Elements.Template.Input:Clone()
 			Input.Name = InputSettings.Name
@@ -2812,7 +2652,6 @@ Topbar.Visible = false
 				TweenService:Create(Input.InputFrame, TweenInfo.new(0.55, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(0, Input.InputFrame.InputBox.TextBounds.X + 24, 0, 30)}):Play()
 			end)
 
-			-- User Edit: Update Input Value
 			function InputSettings:Set(text)
 				if Input then
 					Input.InputFrame.InputBox.Text = text
@@ -2828,7 +2667,6 @@ Topbar.Visible = false
 				end
 			end
 
-			-- User Edit: Delete Input Command
 			function InputSettings:Destroy()
 				if Input then
 					if InputSettings.Flag then
@@ -2854,7 +2692,7 @@ Topbar.Visible = false
 
 			return InputSettings
 		end
--- Dropdown
+
 		function Tab:CreateDropdown(DropdownSettings)
 			local Dropdown = Elements.Template.Dropdown:Clone()
 			if string.find(DropdownSettings.Name,"closed") then
@@ -3017,7 +2855,6 @@ Topbar.Visible = false
 							Debounce = true
 						end
 
-
 						local Success, Response = pcall(function()
 							DropdownSettings.Callback(DropdownSettings.CurrentOption)
 						end)
@@ -3108,7 +2945,6 @@ Topbar.Visible = false
 					Dropdown.Selected.Text = DropdownSettings.CurrentOption[1]
 				end
 
-
 				local Success, Response = pcall(function()
 					DropdownSettings.Callback(NewOption)
 				end)
@@ -3133,10 +2969,9 @@ Topbar.Visible = false
 						end
 					end
 				end
-				--SaveConfiguration()
 			end
 
-			function DropdownSettings:Refresh(optionsTable: table) -- updates a dropdown with new options from optionsTable
+			function DropdownSettings:Refresh(optionsTable: table)
 				DropdownSettings.Options = optionsTable
 				for _, option in Dropdown.List:GetChildren() do
 					if option.ClassName == "Frame" and option.Name ~= "Placeholder" then
@@ -3145,7 +2980,6 @@ Topbar.Visible = false
 				end
 				SetDropdownOptions()
 
-				-- Apply selected/unselected background colors to new options
 				for _, droption in ipairs(Dropdown.List:GetChildren()) do
 					if droption.ClassName == "Frame" and droption.Name ~= "Placeholder" then
 						if not table.find(DropdownSettings.CurrentOption, droption.Name) then
@@ -3156,7 +2990,6 @@ Topbar.Visible = false
 					end
 				end
 
-				-- If the dropdown is currently open, make new options visible immediately
 				if Dropdown.List.Visible then
 					for _, DropdownOpt in ipairs(Dropdown.List:GetChildren()) do
 						if DropdownOpt.ClassName == "Frame" and DropdownOpt.Name ~= "Placeholder" then
@@ -3170,7 +3003,6 @@ Topbar.Visible = false
 				end
 			end
 
-			-- User Edit: Destroy Method for Dropdown
 			function DropdownSettings:Destroy()
 				if Dropdown then
 					if DropdownSettings.Flag then
@@ -3195,7 +3027,6 @@ Topbar.Visible = false
 			return DropdownSettings
 		end
 
-		-- Keybind
 		function Tab:CreateKeybind(KeybindSettings)
 			local CheckingForKey = false
 			local Keybind = Elements.Template.Keybind:Clone()
@@ -3256,7 +3087,7 @@ Topbar.Visible = false
 							KeybindSettings.Callback(tostring(NewKeyNoEnum))
 						end
 					end
-				elseif not KeybindSettings.CallOnChange and KeybindSettings.CurrentKeybind ~= nil and (input.KeyCode == Enum.KeyCode[KeybindSettings.CurrentKeybind] and not processed) then -- Test
+				elseif not KeybindSettings.CallOnChange and KeybindSettings.CurrentKeybind ~= nil and (input.KeyCode == Enum.KeyCode[KeybindSettings.CurrentKeybind] and not processed) then
 					local Held = true
 					local Connection
 					Connection = input.Changed:Connect(function(prop)
@@ -3284,10 +3115,10 @@ Topbar.Visible = false
 						if Held then
 							local Loop; Loop = RunService.Stepped:Connect(function()
 								if not Held then
-									KeybindSettings.Callback(false) -- maybe pcall this
+									KeybindSettings.Callback(false)
 									Loop:Disconnect()
 								else
-									KeybindSettings.Callback(true) -- maybe pcall this
+									KeybindSettings.Callback(true)
 								end
 							end)
 						end
@@ -3313,7 +3144,6 @@ Topbar.Visible = false
 				end
 			end
 
-			-- User Edit: Destroy Method for Keybind
 			function KeybindSettings:Destroy()
 				if Keybind then
 					if KeybindSettings.Flag then
@@ -3338,7 +3168,6 @@ Topbar.Visible = false
 			return KeybindSettings
 		end
 
-		-- Toggle
 		function Tab:CreateToggle(ToggleSettings)
 			local ToggleValue = {}
 
@@ -3405,8 +3234,6 @@ Topbar.Visible = false
 				end
 
 				local Success, Response = pcall(function()
-					if debugX then warn('Running toggle \''..ToggleSettings.Name..'\' (Interact)') end
-
 					ToggleSettings.Callback(ToggleSettings.CurrentValue)
 				end)
 
@@ -3455,8 +3282,6 @@ Topbar.Visible = false
 				end
 
 				local Success, Response = pcall(function()
-					if debugX then warn('Running toggle \''..ToggleSettings.Name..'\' (:Set)') end
-
 					ToggleSettings.Callback(ToggleSettings.CurrentValue)
 				end)
 
@@ -3477,7 +3302,6 @@ Topbar.Visible = false
 				end
 			end
 
-			-- User Edit: Destroy Method for Toggle
 			function ToggleSettings:Destroy()
 				if Toggle then
 					if ToggleSettings.Flag then
@@ -3520,7 +3344,6 @@ Topbar.Visible = false
 			return ToggleSettings
 		end
 
-		-- Slider
 		function Tab:CreateSlider(SliderSettings)
 			local SLDragging = false
 			local Slider = Elements.Template.Slider:Clone()
@@ -3672,7 +3495,6 @@ Topbar.Visible = false
 				end
 			end
 
-			-- User Edit: Destroy Method for Slider
 			function SliderSettings:Destroy()
 				if Slider then
 					if SliderSettings.Flag then
@@ -3722,7 +3544,6 @@ Topbar.Visible = false
 
 	Elements.Visible = true
 
-
 	task.wait(1.1)
 	TweenService:Create(Main, TweenInfo.new(0.7, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 390, 0, 90)}):Play()
 	task.wait(0.3)
@@ -3744,7 +3565,6 @@ Topbar.Visible = false
 	end
 	Topbar.ChangeSize.ImageTransparency = 1
 	Topbar.Hide.ImageTransparency = 1
-
 
 	task.wait(0.5)
 	Topbar.Visible = true
@@ -3784,7 +3604,6 @@ Topbar.Visible = false
 
 	if not success then warn('Rayfield had an issue creating settings.') end
 
-	-- Report after createSettings so loadSettings() has run and usageAnalytics reflects the user's saved preference
 	if reporter and getSetting("System", "usageAnalytics") then
 		local themeName = "Default"
 		if Settings.Theme then
@@ -3798,7 +3617,6 @@ Topbar.Visible = false
 		local discordInvite = nil
 		if Settings.Discord and Settings.Discord.Enabled and Settings.Discord.Invite and Settings.Discord.Invite ~= "" then
 			local raw = tostring(Settings.Discord.Invite)
-			-- Normalize: strip URL prefixes to extract just the invite code
 			discordInvite = (raw:match("discord%.gg/([%w%-]+)") or raw:match("discord%.com/invite/([%w%-]+)") or raw):sub(1, 32)
 		end
 
@@ -3836,7 +3654,7 @@ function RayfieldLibrary:IsVisible(): boolean
 	return not Hidden
 end
 
-local hideHotkeyConnection -- Has to be initialized here since the connection is made later in the script
+local hideHotkeyConnection
 function RayfieldLibrary:Destroy()
 	rayfieldDestroyed = true
 	if hideHotkeyConnection then
@@ -3881,9 +3699,7 @@ Main.Search.Input:GetPropertyChangedSignal('Text'):Connect(function()
 end)
 
 Main.Search.Input.FocusLost:Connect(function(enterPressed)
-	-- Intentionally left blank. 
-	-- This stops the search tab from auto-closing when tapping outside the text box on mobile.
-	-- Search will now ONLY close when the Search Icon or a "Go to tab" button is clicked.
+
 end)
 
 Topbar.Search.MouseButton1Click:Connect(function()
@@ -3914,7 +3730,6 @@ if Topbar:FindFirstChild('Settings') then
 			Elements.UIPageLayout:JumpTo(Elements['Rayfield Settings'])
 		end)
 	end)
-
 end
 
 
@@ -3961,10 +3776,6 @@ end
 function RayfieldLibrary:LoadConfiguration()
 	local config
 
-	if debugX then
-		warn('Loading Configuration')
-	end
-
 	if useStudio then
 		config = [[{"Toggle1adwawd":true,"ColorPicker1awd":{"B":255,"G":255,"R":255},"Slider1dawd":100,"ColorPicfsefker1":{"B":255,"G":255,"R":255},"Slidefefsr1":80,"dawdawd":"","Input1":"hh","Keybind1":"B","Dropdown1":["Ocean"]}]]
 	end
@@ -4001,18 +3812,12 @@ function RayfieldLibrary:LoadConfiguration()
 end
 
 
-if useStudio then
-	-- run w/ studio
-	-- Feel free to place your own script here to see how it'd work in Roblox Studio before running it on your execution software.
-end
-
 if CEnabled and Main:FindFirstChild('Notice') then
 	Main.Notice.BackgroundTransparency = 1
 	Main.Notice.Title.TextTransparency = 1
 	Main.Notice.Size = UDim2.new(0, 0, 0, 0)
 	Main.Notice.Position = UDim2.new(0.5, 0, 0, -100)
 	Main.Notice.Visible = true
-
 
 	TweenService:Create(Main.Notice, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 280, 0, 35), Position = UDim2.new(0.5, 0, 0, -50), BackgroundTransparency = 0.5}):Play()
 	TweenService:Create(Main.Notice.Title, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {TextTransparency = 0.1}):Play()
