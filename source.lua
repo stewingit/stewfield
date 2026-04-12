@@ -109,6 +109,8 @@ local ConfigurationExtension = ".rfld"
 local settingsTable = {
     General = {
         rayfieldOpen = {Type = 'bind', Value = 'K', Name = 'Rayfield Keybind'},
+        rememberTab = {Type = 'toggle', Value = false, Name = 'Remember Previous Tab'},
+        lastTab = {Type = 'hidden', Value = ''}
     }
 }
 
@@ -204,7 +206,9 @@ local function loadSettings()
 					for settingName, setting in pairs(settingCategory) do
 						if file[categoryName][settingName] then
 							setting.Value = file[categoryName][settingName].Value
-							setting.Element:Set(getSetting(categoryName, settingName))
+							if setting.Element and setting.Element.Set then
+								setting.Element:Set(getSetting(categoryName, settingName))
+							end
 						end
 					end
 				end
@@ -2082,7 +2086,22 @@ function RayfieldLibrary:CreateWindow(Settings)
 		end
 
 		TabPage.Parent = Elements
-		if not FirstTab and not Ext then
+		
+		-- NEW LOGIC: Check if this tab is the saved target tab
+		local isTargetTab = false
+		local shouldRemember = getSetting("General", "rememberTab")
+		local savedTab = getSetting("General", "lastTab")
+		
+		if shouldRemember and type(savedTab) == "string" and savedTab ~= "" then
+			if Name == savedTab then
+				isTargetTab = true
+			end
+		elseif not FirstTab then
+			-- Fallback to the first tab created if the setting is off or empty
+			isTargetTab = true
+		end
+
+		if isTargetTab and not Ext then
 			Elements.UIPageLayout.Animated = false
 			Elements.UIPageLayout:JumpTo(TabPage)
 			Elements.UIPageLayout.Animated = true
@@ -2100,10 +2119,9 @@ function RayfieldLibrary:CreateWindow(Settings)
 			TabButton.Title.TextColor3 = SelectedTheme.TabTextColor
 		end
 
-
 		-- Animate
 		task.wait(0.1)
-		if FirstTab or Ext then
+		if not isTargetTab or Ext then
 			TabButton.BackgroundColor3 = SelectedTheme.TabBackground
 			TabButton.Image.ImageColor3 = SelectedTheme.TabTextColor
 			TabButton.Title.TextColor3 = SelectedTheme.TabTextColor
@@ -2112,13 +2130,21 @@ function RayfieldLibrary:CreateWindow(Settings)
 			TweenService:Create(TabButton.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.2}):Play()
 			TweenService:Create(TabButton.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
 		elseif not Ext then
-			FirstTab = Name
+			if not FirstTab then FirstTab = Name end -- Keep FirstTab initialized for other internal library features
 			TabButton.BackgroundColor3 = SelectedTheme.TabBackgroundSelected
 			TabButton.Image.ImageColor3 = SelectedTheme.SelectedTabTextColor
 			TabButton.Title.TextColor3 = SelectedTheme.SelectedTabTextColor
 			TweenService:Create(TabButton.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0}):Play()
 			TweenService:Create(TabButton, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
 			TweenService:Create(TabButton.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+			
+			-- Automatically scroll the TabList so the loaded tab is center-screen
+			if TabList:IsA("ScrollingFrame") then
+				local targetX = TabButton.AbsolutePosition.X - TabList.AbsolutePosition.X + TabList.CanvasPosition.X - (TabList.AbsoluteSize.X / 2) + (TabButton.AbsoluteSize.X / 2)
+				local maxScroll = math.max(0, TabList.AbsoluteCanvasSize.X - TabList.AbsoluteSize.X)
+				targetX = math.clamp(targetX, 0, maxScroll)
+				TweenService:Create(TabList, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {CanvasPosition = Vector2.new(targetX, 0)}):Play()
+			end
 		end
 
 
@@ -2146,6 +2172,9 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 			if Elements.UIPageLayout.CurrentPage ~= TabPage then
 				Elements.UIPageLayout:JumpTo(TabPage)
+			end
+			if getSetting("General", "rememberTab") then
+				updateSetting("General", "lastTab", Name)
 			end
 		end)
 
