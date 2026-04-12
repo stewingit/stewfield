@@ -1601,7 +1601,7 @@ local function Minimise()
 	Debounce = false
 end
 
-local function saveSettings() -- Save settings to config file
+local function saveSettings() -- Save settings to file
 	local encoded
 	local success, err = pcall(function()
 		encoded = HttpService:JSONEncode(settingsTable)
@@ -1614,8 +1614,6 @@ local function saveSettings() -- Save settings to config file
 			end
 		end
 		callSafely(writefile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension, encoded)
-			end
-		end
 		callSafely(writefile, RayfieldFolder..'/settings'..ConfigurationExtension, encoded)
 	end
 end
