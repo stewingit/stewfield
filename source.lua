@@ -101,12 +101,12 @@ local function secureNotify(wType, title, content)
 		})
 	end)
 end
-local InterfaceBuild = 'UU2NX'
-local Release = "Build 1.746"
+
 local RayfieldFolder = "Rayfield"
 local ConfigurationFolder = RayfieldFolder.."/Configurations"
 local ConfigurationExtension = ".rfld"
-local currentSettingsName = "DefaultSettings"
+local globalSettingsName = "GlobalSettings"
+local currentConfigID = "DefaultConfig"
 local settingsTable = {
     General = {
         rayfieldOpen = {Type = 'bind', Value = 'K', Name = 'Rayfield Keybind'},
@@ -174,40 +174,39 @@ local function loadSettings()
 
 	local success, result =	pcall(function()
 		if callSafely(isfolder, RayfieldFolder) then
-			if callSafely(isfile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension) then
-				file = callSafely(readfile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension)
+			if callSafely(isfile, RayfieldFolder..'/'..globalSettingsName..ConfigurationExtension) then
+				file = callSafely(readfile, RayfieldFolder..'/'..globalSettingsName..ConfigurationExtension)
 			end
 		end
 
 		-- for debug in studio
 		if useStudio then
 			file = [[
-    {"General":{"rayfieldOpen":{"Value":"K","Type":"bind","Name":"Rayfield Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"Rayfield Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}}}
+    {"DefaultConfig":{"General":{"rayfieldOpen":{"Value":"K","Type":"bind","Name":"Rayfield Keybind"}}}}
 ]]
 		end
 
+		local decodedFile = {}
 		if file then
-			local decodeSuccess, decodedFile = pcall(function() return HttpService:JSONDecode(file) end)
-			if decodeSuccess then
-				file = decodedFile
-			else
-				file = {}
+			local decodeSuccess, decoded = pcall(function() return HttpService:JSONDecode(file) end)
+			if decodeSuccess and type(decoded) == "table" then
+				decodedFile = decoded
 			end
-		else
-			file = {}
 		end
 
+		-- Extract the settings specifically for this ConfigurationID
+		local configData = decodedFile[currentConfigID] or {}
 
 		if not settingsCreated then
 			return
 		end
 
-		if next(file) ~= nil then
+		if next(configData) ~= nil then
 			for categoryName, settingCategory in pairs(settingsTable) do
-				if file[categoryName] then
+				if configData[categoryName] then
 					for settingName, setting in pairs(settingCategory) do
-						if file[categoryName][settingName] then
-							setting.Value = file[categoryName][settingName].Value
+						if configData[categoryName][settingName] then
+							setting.Value = configData[categoryName][settingName].Value
 							if setting.Element and setting.Element.Set then
 								setting.Element:Set(getSetting(categoryName, settingName))
 							end
@@ -1604,7 +1603,21 @@ end
 local function saveSettings() -- Save settings to file
 	local encoded
 	local success, err = pcall(function()
-		encoded = HttpService:JSONEncode(settingsTable)
+		local existingData = {}
+		-- Load existing global settings first so we don't overwrite other scripts
+		if callSafely(isfile, RayfieldFolder..'/'..globalSettingsName..ConfigurationExtension) then
+			local fileContent = callSafely(readfile, RayfieldFolder..'/'..globalSettingsName..ConfigurationExtension)
+			if fileContent then
+				local decodeSuccess, decoded = pcall(function() return HttpService:JSONDecode(fileContent) end)
+				if decodeSuccess and type(decoded) == "table" then
+					existingData = decoded
+				end
+			end
+		end
+
+		-- Inject current configuration settings
+		existingData[currentConfigID] = settingsTable
+		encoded = HttpService:JSONEncode(existingData)
 	end)
 
 	if success then
@@ -1613,8 +1626,9 @@ local function saveSettings() -- Save settings to file
 				script.Parent['get.val'].Value = encoded
 			end
 		end
-		callSafely(writefile, RayfieldFolder..'/'..currentSettingsName..ConfigurationExtension, encoded)
-		callSafely(writefile, RayfieldFolder..'/settings'..ConfigurationExtension, encoded)
+		callSafely(writefile, RayfieldFolder..'/'..globalSettingsName..ConfigurationExtension, encoded)
+	else
+		warn("Stewfield | Failed to encode/save settings: ", err)
 	end
 end
 
@@ -1819,19 +1833,19 @@ function RayfieldLibrary:CreateWindow(Settings)
 			Settings.ConfigurationSaving.Enabled = false
 		end
 
-		CFileName = Settings.ConfigurationSaving.FileName
+CFileName = Settings.ConfigurationSaving.FileName
 		ConfigurationFolder = Settings.ConfigurationSaving.FolderName or ConfigurationFolder
 		CEnabled = Settings.ConfigurationSaving.Enabled
 		
-		-- NEW: Set the unique settings file name based on the script's configuration filename
-		currentSettingsName = CFileName .. "_settings"
+		-- Use the provided ConfigurationID, fallback to CFileName, then script Name
+		currentConfigID = Settings.ConfigurationID or CFileName or Settings.Name or "DefaultConfig"
 
 		if Settings.ConfigurationSaving.Enabled then
 			ensureFolder(ConfigurationFolder)
 		end
 	end)
 
-	-- NEW: Reload settings now that we have the proper script-specific file name
+	-- Reload settings now that we have established the currentConfigID namespace
 	loadSettings()
 	
 	-- NEW: Override the script's requested theme with the user's saved theme if available
