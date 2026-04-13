@@ -1,3 +1,4 @@
+-- [[ INITIALISATION & SERVICE FETCHING ]] --
 if debugX then
 	warn('Initialising Stewfield')
 end
@@ -12,6 +13,7 @@ local TweenService = getService("TweenService")
 local Players = getService("Players")
 local CoreGui = getService("CoreGui")
 
+-- [[ HTTP & ASSET LOADING ]] --
 local function loadWithTimeout(url: string, timeout: number?): ...any
 	assert(type(url) == "string", "Expected string, got " .. type(url))
 	timeout = timeout or 5
@@ -95,6 +97,7 @@ local function secureNotify(wType, title, content)
 	end)
 end
 
+-- [[ SETTINGS CONFIGURATION ]] --
 local RayfieldFolder = "Rayfield"
 local ConfigurationFolder = RayfieldFolder.."/Configurations"
 local ConfigurationExtension = ".rfld"
@@ -104,7 +107,8 @@ local settingsTable = {
 		rayfieldOpen = {Type = 'bind', Value = 'K', Name = 'Rayfield Keybind'},
 		rememberTab = {Type = 'toggle', Value = true, Name = 'Remember Previous Tab'},
 		lastTab = {Type = 'hidden', Value = ''},
-		theme = {Type = 'dropdown', Value = {'Default'}, Name = 'Interface Theme', Options = {'Default', 'Ocean', 'AmberGlow', 'Light', 'Amethyst', 'Green', 'Bloom', 'DarkBlue', 'Serenity'}}
+		theme = {Type = 'dropdown', Value = {'Default'}, Name = 'Interface Theme', Options = {'Default', 'Ocean', 'AmberGlow', 'Light', 'Amethyst', 'Green', 'Bloom', 'DarkBlue', 'Serenity'}},
+		searchType = {Type = 'dropdown', Value = {'Tabs'}, Name = 'Search Through', Options = {'Tabs', 'Elements'}}
 	}
 }
 
@@ -251,6 +255,7 @@ if debugX then
 	warn('Moving on to continue initialisation')
 end
 
+-- [[ THEME DEFINITIONS ]] --
 local RayfieldLibrary = {
 	Flags = {},
 	Theme = {
@@ -554,6 +559,7 @@ local RayfieldLibrary = {
 	}
 }
 
+-- [[ UI COMPONENT INITIALISATION ]] --
 local RayfieldAssetId = customAssetId or 75623004084296
 local buildAttempts = 0
 local correctBuild = true
@@ -610,7 +616,7 @@ task.spawn(function()
 	local index = 1
 	
 	while LoadingAssetsLabel and LoadingAssetsLabel.Parent do
-		LoadingAssetsLabel.Text = "Loading Assets" .. animFrames[index]
+		LoadingAssetsLabel.Text = tostring("Loading Assets" .. animFrames[index])
 		index = (index % #animFrames) + 1
 		task.wait(0.4)
 	end
@@ -727,6 +733,7 @@ if UserInputService.TouchEnabled then
 	useMobilePrompt = true
 end
 
+-- [[ UI VARIABLES SETUP ]] --
 local Main = Rayfield.Main
 local MPrompt = Rayfield:FindFirstChild('Prompt')
 local Topbar = Main.Topbar
@@ -742,7 +749,7 @@ local dragOffsetMobile = 150
 
 Rayfield.DisplayOrder = 100
 LoadingFrame.Visible = false
-LoadingFrame.Version.Text = Release
+LoadingFrame.Version.Text = tostring(Release or "Stewfield")
 
 local Icons = useStudio and require(script.Parent.icons) or loadWithTimeout('https://raw.githubusercontent.com/stewingit/stewfield/refs/heads/main/icons.lua')
 
@@ -755,6 +762,7 @@ local keybindConnections = {}
 
 local SelectedTheme = RayfieldLibrary.Theme.Default
 
+-- [[ THEME CHANGER ]] --
 local function ChangeTheme(Theme)
 	if typeof(Theme) == 'string' then
 		SelectedTheme = RayfieldLibrary.Theme[Theme]
@@ -801,6 +809,7 @@ local function ChangeTheme(Theme)
 	end
 end
 
+-- [[ ICON RESOLVER ]] --
 local function getIcon(name : string): {id: number, imageRectSize: Vector2, imageRectOffset: Vector2}
 	if not Icons then
 		warn("Lucide Icons: Cannot use icons as icons library is not loaded")
@@ -869,6 +878,7 @@ local function resolveIcon(icon)
 	end
 end
 
+-- [[ DRAGGING LOGIC ]] --
 local function makeDraggable(object, dragObject, enableTaptic, tapticOffset)
 	local dragging = false
 	local relative = nil
@@ -953,16 +963,18 @@ local function UnpackColor(Color)
 	return Color3.fromRGB(Color.R, Color.G, Color.B)
 end
 
+-- [[ NOTIFICATION SYSTEM ]] --
 function RayfieldLibrary:Notify(data)
 	task.spawn(function()
 		local newNotification = Notifications.Template:Clone()
-		newNotification.Name = data.Title or 'No Title Provided'
+		newNotification.Name = tostring(data.Title or 'No Title Provided')
 		newNotification.Parent = Notifications
 		newNotification.LayoutOrder = #Notifications:GetChildren()
 		newNotification.Visible = false
 
-		newNotification.Title.Text = data.Title or "Unknown Title"
-		newNotification.Description.Text = data.Content or "Unknown Content"
+		-- Fixed assignments using tostring() to avoid string expected, got nil errors
+		newNotification.Title.Text = tostring(data.Title or "Unknown Title")
+		newNotification.Description.Text = tostring(data.Content or "Unknown Content")
 
 		if data.Image then
 			local img, rectOffset, rectSize = resolveIcon(data.Image)
@@ -1039,64 +1051,72 @@ function RayfieldLibrary:Notify(data)
 	end)
 end
 
+-- [[ SEARCH LOGIC ]] --
 local preSearchPage = nil
 local closeSearch
 
 local function openSearch()
+	local searchMode = getSetting("General", "searchType")
+	if type(searchMode) == "table" then searchMode = searchMode[1] end
+
 	searchOpen = true
 	preSearchPage = Elements.UIPageLayout.CurrentPage
 
-	local searchTab = Elements:FindFirstChild("Search Results")
-	if not searchTab then
-		searchTab = Elements.Template:Clone()
-		searchTab.Name = "Search Results"
-		searchTab.Visible = true
-		searchTab.LayoutOrder = 10001
-		searchTab.Parent = Elements
-	end
-
-	for _, child in ipairs(searchTab:GetChildren()) do
-		if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
-			child:Destroy()
+	if searchMode == "Tabs" then
+		local searchTab = Elements:FindFirstChild("Search Results")
+		if not searchTab then
+			searchTab = Elements.Template:Clone()
+			searchTab.Name = "Search Results"
+			searchTab.Visible = true
+			searchTab.LayoutOrder = 10001
+			searchTab.Parent = Elements
 		end
-	end
 
-	for _, tabbtn in ipairs(TabList:GetChildren()) do
-		if tabbtn.ClassName == "Frame" and tabbtn.Name ~= "Placeholder" and tabbtn.Name ~= "Template" and tabbtn.Name ~= "Rayfield Settings" then
-			local tabName = tabbtn.Name
-			local btn = Elements.Template.Button:Clone()
-			btn.Name = tabName
-			btn.Title.Text = "Go to tab: " .. tabName
-			btn.Visible = true
-			btn.Parent = searchTab
-			
-			btn.BackgroundTransparency = 0
-			btn.UIStroke.Transparency = 0
-			btn.Title.TextTransparency = 0
-			btn.BackgroundColor3 = SelectedTheme.ElementBackground
-			btn.UIStroke.Color = SelectedTheme.ElementStroke
-
-			btn.MouseEnter:Connect(function()
-				TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
-			end)
-
-			btn.MouseLeave:Connect(function()
-				TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
-			end)
-
-			btn.Interact.MouseButton1Click:Connect(function()
-				local targetTab = Elements:FindFirstChild(tabName)
-				if targetTab then
-					preSearchPage = targetTab
-				end
-				closeSearch()
-			end)
+		for _, child in ipairs(searchTab:GetChildren()) do
+			if child.ClassName == "Frame" and child.Name ~= "Placeholder" then
+				child:Destroy()
+			end
 		end
-	end
 
-	Elements.UIPageLayout.Animated = false
-	Elements.UIPageLayout:JumpTo(searchTab)
-	Elements.UIPageLayout.Animated = true
+		for _, tabbtn in ipairs(TabList:GetChildren()) do
+			if tabbtn.ClassName == "Frame" and tabbtn.Name ~= "Placeholder" and tabbtn.Name ~= "Template" and tabbtn.Name ~= "Rayfield Settings" then
+				local tabName = tabbtn.Name
+				local btn = Elements.Template.Button:Clone()
+				btn.Name = tabName
+				btn.Title.Text = tostring("Go to tab: " .. tabName)
+				btn.Visible = true
+				btn.Parent = searchTab
+				
+				btn.BackgroundTransparency = 0
+				btn.UIStroke.Transparency = 0
+				btn.Title.TextTransparency = 0
+				btn.BackgroundColor3 = SelectedTheme.ElementBackground
+				btn.UIStroke.Color = SelectedTheme.ElementStroke
+
+				btn.MouseEnter:Connect(function()
+					TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
+				end)
+
+				btn.MouseLeave:Connect(function()
+					TweenService:Create(btn, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
+				end)
+
+				btn.Interact.MouseButton1Click:Connect(function()
+					local targetTab = Elements:FindFirstChild(tabName)
+					if targetTab then
+						preSearchPage = targetTab
+					end
+					closeSearch()
+				end)
+			end
+		end
+
+		Elements.UIPageLayout.Animated = false
+		Elements.UIPageLayout:JumpTo(searchTab)
+		Elements.UIPageLayout.Animated = true
+	elseif searchMode == "Elements" then
+		-- Keep the current page, don't generate the tabs list
+	end
 
 	Main.Search.BackgroundTransparency = 1
 	Main.Search.Shadow.ImageTransparency = 1
@@ -1129,16 +1149,30 @@ local function openSearch()
 end
 
 closeSearch = function()
+	local searchMode = getSetting("General", "searchType")
+	if type(searchMode) == "table" then searchMode = searchMode[1] end
+
 	searchOpen = false
 	
 	local targetPageName = nil
-	if Elements.UIPageLayout.CurrentPage and Elements.UIPageLayout.CurrentPage.Name == "Search Results" and preSearchPage then
-		Elements.UIPageLayout.Animated = false
-		Elements.UIPageLayout:JumpTo(preSearchPage)
-		Elements.UIPageLayout.Animated = true
-		targetPageName = preSearchPage.Name
-	else
+	if searchMode == "Tabs" then
+		if Elements.UIPageLayout.CurrentPage and Elements.UIPageLayout.CurrentPage.Name == "Search Results" and preSearchPage then
+			Elements.UIPageLayout.Animated = false
+			Elements.UIPageLayout:JumpTo(preSearchPage)
+			Elements.UIPageLayout.Animated = true
+			targetPageName = preSearchPage.Name
+		else
+			targetPageName = Elements.UIPageLayout.CurrentPage and Elements.UIPageLayout.CurrentPage.Name
+		end
+	elseif searchMode == "Elements" then
 		targetPageName = Elements.UIPageLayout.CurrentPage and Elements.UIPageLayout.CurrentPage.Name
+		if Elements.UIPageLayout.CurrentPage then
+			for _, element in ipairs(Elements.UIPageLayout.CurrentPage:GetChildren()) do
+				if element.ClassName == "Frame" and element.Name ~= "Placeholder" and element.Name ~= 'UIListLayout' then
+					element.Visible = true
+				end
+			end
+		end
 	end
 
 	TweenService:Create(Main.Search, TweenInfo.new(0.35, Enum.EasingStyle.Quint), {BackgroundTransparency = 1, Size = UDim2.new(1, -55, 0, 30)}):Play()
@@ -1175,7 +1209,7 @@ closeSearch = function()
 	Main.Search.Input.Text = ''
 	Main.Search.Input.Interactable = false
 end
-
+-- [[ VISIBILITY FUNCTIONS ]] --
 local function setElementsVisible(show)
 	for _, tab in ipairs(Elements:GetChildren()) do
 		if tab.Name ~= "Template" and tab.ClassName == "ScrollingFrame" and tab.Name ~= "Placeholder" then
@@ -1392,6 +1426,7 @@ local function Minimise()
 	Debounce = false
 end
 
+-- [[ SETTINGS MANAGEMENT ]] --
 local function saveSettings()
 	local saveTable = {}
 	for catName, category in pairs(settingsTable) do
@@ -1441,7 +1476,7 @@ local function createSettings(window)
 	end
 
 	for categoryName, settingCategory in pairs(settingsTable) do
-		newTab:CreateSection(categoryName)
+		newTab:CreateSection(tostring(categoryName))
 
 		for settingName, setting in pairs(settingCategory) do
 			if setting.Type == 'input' then
@@ -1514,6 +1549,7 @@ local function fadeOutKeyUI(KeyMain)
 	TweenService:Create(KeyMain.Hide, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {ImageTransparency = 1}):Play()
 end
 
+-- [[ WINDOW CREATION ]] --
 function RayfieldLibrary:CreateWindow(Settings)
 	if Rayfield:FindFirstChild('Loading') then
 		if getgenv and not getgenv().rayfieldCached then
@@ -1543,7 +1579,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 	ensureFolder(RayfieldFolder)
 
 	local Passthrough = false
-	Topbar.Title.Text = Settings.Name
+	Topbar.Title.Text = tostring(Settings.Name or "")
 
 	Main.Size = UDim2.new(0, 420, 0, 100)
 	Main.Visible = true
@@ -1555,12 +1591,12 @@ function RayfieldLibrary:CreateWindow(Settings)
 	LoadingFrame.Subtitle.TextTransparency = 1
 
 	if Settings.ShowText then
-		MPrompt.Title.Text = 'Show '..Settings.ShowText
+		MPrompt.Title.Text = tostring('Show '..Settings.ShowText)
 	end
 
 	LoadingFrame.Version.TextTransparency = 1
-	LoadingFrame.Title.Text = Settings.LoadingTitle or "Stewfield"
-	LoadingFrame.Subtitle.Text = Settings.LoadingSubtitle or "Interface"
+	LoadingFrame.Title.Text = tostring(Settings.LoadingTitle or "Stewfield")
+	LoadingFrame.Subtitle.Text = tostring(Settings.LoadingSubtitle or "Interface")
 
 	if Settings.LoadingTitle ~= "Stewfield Interface" then
 		LoadingFrame.Version.Text = "Stewfield UI"
@@ -1631,6 +1667,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 		end
 	end
 
+	-- [[ DISCORD INVITE HANDLING ]] --
 	if Settings.Discord and Settings.Discord.Enabled and not useStudio and not secureMode then
 		ensureFolder(RayfieldFolder.."/Discord Invites")
 
@@ -1659,6 +1696,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 		end
 	end
 
+	-- [[ KEY SYSTEM HANDLING ]] --
 	if (Settings.KeySystem) then
 		if not Settings.KeySettings then
 			Passthrough = true
@@ -1736,9 +1774,9 @@ function RayfieldLibrary:CreateWindow(Settings)
 			end
 
 			local KeyMain = KeyUI.Main
-			KeyMain.Title.Text = Settings.KeySettings.Title or Settings.Name
-			KeyMain.Subtitle.Text = Settings.KeySettings.Subtitle or "Key System"
-			KeyMain.NoteMessage.Text = Settings.KeySettings.Note or "No instructions"
+			KeyMain.Title.Text = tostring(Settings.KeySettings.Title or Settings.Name or "")
+			KeyMain.Subtitle.Text = tostring(Settings.KeySettings.Subtitle or "Key System")
+			KeyMain.NoteMessage.Text = tostring(Settings.KeySettings.Note or "No instructions")
 
 			KeyMain.Size = UDim2.new(0, 467, 0, 175)
 			KeyMain.BackgroundTransparency = 1
@@ -1846,11 +1884,13 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 	local FirstTab = false
 	local Window = {}
+	
+	-- [[ TAB CREATION ]] --
 	function Window:CreateTab(Name, Image, Ext)
 		local SDone = false
 		local TabButton = TabList.Template:Clone()
-		TabButton.Name = Name
-		TabButton.Title.Text = Name
+		TabButton.Name = tostring(Name or "Tab")
+		TabButton.Title.Text = tostring(Name or "Tab")
 		TabButton.Parent = TabList
 		TabButton.Title.TextWrapped = false
 		TabButton.Size = UDim2.new(0, TabButton.Title.TextBounds.X + 30, 0, 30)
@@ -1876,7 +1916,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 		TabButton.Visible = not Ext or false
 
 		local TabPage = Elements.Template:Clone()
-		TabPage.Name = Name
+		TabPage.Name = tostring(Name or "Tab")
 		TabPage.Visible = true
 
 		TabPage.LayoutOrder = #Elements:GetChildren() or Ext and 10000
@@ -1929,7 +1969,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			TweenService:Create(TabButton.Image, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {ImageTransparency = 0.2}):Play()
 			TweenService:Create(TabButton.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
 		elseif not Ext then
-			if not FirstTab then FirstTab = Name end
+			if not FirstTab then FirstTab = tostring(Name or "Tab") end
 			TabButton.BackgroundColor3 = SelectedTheme.TabBackgroundSelected
 			TabButton.Image.ImageColor3 = SelectedTheme.SelectedTabTextColor
 			TabButton.Title.TextColor3 = SelectedTheme.SelectedTabTextColor
@@ -1977,12 +2017,13 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 		local Tab = {}
 
+		-- [[ BUTTON CREATION ]] --
 		function Tab:CreateButton(ButtonSettings)
 			local ButtonValue = {}
 
 			local Button = Elements.Template.Button:Clone()
-			Button.Name = ButtonSettings.Name
-			Button.Title.Text = ButtonSettings.Name
+			Button.Name = tostring(ButtonSettings.Name or "Button")
+			Button.Title.Text = tostring(ButtonSettings.Name or "Button")
 			Button.Visible = true
 			Button.Parent = TabPage
 
@@ -2004,16 +2045,16 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Button.ElementIndicator, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
 					TweenService:Create(Button.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Button.Title.Text = "Callback Error"
-					print("Rayfield | "..ButtonSettings.Name.." Callback Error " ..tostring(Response))
+					print("Rayfield | "..tostring(ButtonSettings.Name).." Callback Error " ..tostring(Response))
 					warn('Check docs.sirius.menu for help with Rayfield specific development.')
 					task.wait(0.5)
-					Button.Title.Text = ButtonSettings.Name
+					Button.Title.Text = tostring(ButtonSettings.Name)
 					TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
 					TweenService:Create(Button.ElementIndicator, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {TextTransparency = 0.9}):Play()
 					TweenService:Create(Button.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 				else
-					if not ButtonSettings.Ext then
-						SaveConfiguration(ButtonSettings.Name..'\n')
+					if not ButtonSettings.Ext and SaveConfiguration then
+						pcall(SaveConfiguration, tostring(ButtonSettings.Name)..'\n')
 					end
 					TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackgroundHover}):Play()
 					TweenService:Create(Button.ElementIndicator, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
@@ -2036,8 +2077,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 			end)
 
 			function ButtonValue:Set(NewButton)
-				Button.Title.Text = NewButton
-				Button.Name = NewButton
+				Button.Title.Text = tostring(NewButton)
+				Button.Name = tostring(NewButton)
 			end
 
 			function ButtonValue:Destroy()
@@ -2050,6 +2091,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return ButtonValue
 		end
 
+		-- [[ COLORPICKER CREATION ]] --
 		function Tab:CreateColorPicker(ColorPickerSettings)
 			ColorPickerSettings.Type = "ColorPicker"
 			local ColorPicker = Elements.Template.ColorPicker:Clone()
@@ -2058,8 +2100,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 			local Main = Background.MainCP
 			local Slider = ColorPicker.ColorSlider
 			ColorPicker.ClipsDescendants = true
-			ColorPicker.Name = ColorPickerSettings.Name
-			ColorPicker.Title.Text = ColorPickerSettings.Name
+			ColorPicker.Name = tostring(ColorPickerSettings.Name or "ColorPicker")
+			ColorPicker.Title.Text = tostring(ColorPickerSettings.Name or "ColorPicker")
 			ColorPicker.Visible = true
 			ColorPicker.Parent = TabPage
 			ColorPicker.Size = UDim2.new(1, -10, 0, 45)
@@ -2151,7 +2193,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			local h,s,v = ColorPickerSettings.Color:ToHSV()
 			local color = Color3.fromHSV(h,s,v) 
 			local hex = string.format("#%02X%02X%02X",color.R*0xFF,color.G*0xFF,color.B*0xFF)
-			ColorPicker.HexInput.InputBox.Text = hex
+			ColorPicker.HexInput.InputBox.Text = tostring(hex)
 			local function setDisplay()
 				Main.MainPoint.Position = UDim2.new(s,-Main.MainPoint.AbsoluteSize.X/2,1-v,-Main.MainPoint.AbsoluteSize.Y/2)
 				Main.MainPoint.ImageColor3 = Color3.fromHSV(h,s,v)
@@ -2166,7 +2208,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 				ColorPicker.RGB.GInput.InputBox.Text = tostring(g)
 				ColorPicker.RGB.BInput.InputBox.Text = tostring(b)
 				hex = string.format("#%02X%02X%02X",color.R*0xFF,color.G*0xFF,color.B*0xFF)
-				ColorPicker.HexInput.InputBox.Text = hex
+				ColorPicker.HexInput.InputBox.Text = tostring(hex)
 			end
 			setDisplay()
 			ColorPicker.HexInput.InputBox.FocusLost:Connect(function()
@@ -2179,7 +2221,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 						ColorPickerSettings.Color = rgbColor
 					end) 
 				then 
-					ColorPicker.HexInput.InputBox.Text = hex 
+					ColorPicker.HexInput.InputBox.Text = tostring(hex)
 				end
 				pcall(function()ColorPickerSettings.Callback(Color3.fromHSV(h,s,v))end)
 				local r,g,b = math.floor((h*255)+0.5),math.floor((s*255)+0.5),math.floor((v*255)+0.5)
@@ -2291,6 +2333,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return ColorPickerSettings
 		end
 
+		-- [[ SECTION CREATION ]] --
 		function Tab:CreateSection(SectionName)
 			local SectionValue = {}
 			local SectionSpace
@@ -2302,7 +2345,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			end
 
 			local Section = Elements.Template.SectionTitle:Clone()
-			Section.Title.Text = SectionName
+			Section.Title.Text = tostring(SectionName or "")
 			Section.Visible = true
 			Section.Parent = TabPage
 
@@ -2311,7 +2354,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 			function SectionValue:Set(NewSection)
 				if Section then
-					Section.Title.Text = NewSection
+					Section.Title.Text = tostring(NewSection or "")
 				end
 			end
 
@@ -2331,6 +2374,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return SectionValue
 		end
 
+		-- [[ DIVIDER CREATION ]] --
 		function Tab:CreateDivider()
 			local DividerValue = {}
 
@@ -2348,11 +2392,12 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return DividerValue
 		end
 
+		-- [[ LABEL CREATION ]] --
 		function Tab:CreateLabel(LabelText : string, Icon: number, Color : Color3, IgnoreTheme : boolean)
 			local LabelValue = {}
 
 			local Label = Elements.Template.Label:Clone()
-			Label.Title.Text = LabelText
+			Label.Title.Text = tostring(LabelText or "")
 			Label.Visible = true
 			Label.Parent = TabPage
 
@@ -2386,7 +2431,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 			function LabelValue:Set(NewLabel, Icon, Color)
 				if Label then
-					Label.Title.Text = NewLabel
+					Label.Title.Text = tostring(NewLabel or "")
 
 					if Color then
 						Label.BackgroundColor3 = Color or SelectedTheme.SecondaryElementBackground
@@ -2424,12 +2469,13 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return LabelValue
 		end
 
+		-- [[ PARAGRAPH CREATION ]] --
 		function Tab:CreateParagraph(ParagraphSettings)
 			local ParagraphValue = {}
 
 			local Paragraph = Elements.Template.Paragraph:Clone()
-			Paragraph.Title.Text = ParagraphSettings.Title
-			Paragraph.Content.Text = ParagraphSettings.Content
+			Paragraph.Title.Text = tostring(ParagraphSettings.Title or "")
+			Paragraph.Content.Text = tostring(ParagraphSettings.Content or "")
 			Paragraph.Visible = true
 			Paragraph.Parent = TabPage
 
@@ -2448,8 +2494,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 			function ParagraphValue:Set(NewParagraphSettings)
 				if Paragraph then
-					Paragraph.Title.Text = NewParagraphSettings.Title
-					Paragraph.Content.Text = NewParagraphSettings.Content
+					Paragraph.Title.Text = tostring(NewParagraphSettings.Title or "")
+					Paragraph.Content.Text = tostring(NewParagraphSettings.Content or "")
 				end
 			end
 
@@ -2470,10 +2516,11 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return ParagraphValue
 		end
 
+		-- [[ INPUT CREATION ]] --
 		function Tab:CreateInput(InputSettings)
 			local Input = Elements.Template.Input:Clone()
-			Input.Name = InputSettings.Name
-			Input.Title.Text = InputSettings.Name
+			Input.Name = tostring(InputSettings.Name or "Input")
+			Input.Title.Text = tostring(InputSettings.Name or "Input")
 			Input.Visible = true
 			Input.Parent = TabPage
 
@@ -2481,7 +2528,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			Input.UIStroke.Transparency = 1
 			Input.Title.TextTransparency = 1
 
-			Input.InputFrame.InputBox.Text = InputSettings.CurrentValue or ''
+			Input.InputFrame.InputBox.Text = tostring(InputSettings.CurrentValue or '')
 
 			Input.InputFrame.BackgroundColor3 = SelectedTheme.InputBackground
 			Input.InputFrame.UIStroke.Color = SelectedTheme.InputStroke
@@ -2490,7 +2537,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			TweenService:Create(Input.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 			TweenService:Create(Input.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
 
-			Input.InputFrame.InputBox.PlaceholderText = InputSettings.PlaceholderText
+			Input.InputFrame.InputBox.PlaceholderText = tostring(InputSettings.PlaceholderText or "")
 			Input.InputFrame.Size = UDim2.new(0, Input.InputFrame.InputBox.TextBounds.X + 24, 0, 30)
 
 			Input.InputFrame.InputBox.FocusLost:Connect(function()
@@ -2503,10 +2550,10 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Input, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Input.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Input.Title.Text = "Callback Error"
-					print("Rayfield | "..InputSettings.Name.." Callback Error " ..tostring(Response))
+					print("Rayfield | "..tostring(InputSettings.Name).." Callback Error " ..tostring(Response))
 					warn('Check docs.sirius.menu for help with Rayfield specific development.')
 					task.wait(0.5)
-					Input.Title.Text = InputSettings.Name
+					Input.Title.Text = tostring(InputSettings.Name)
 					TweenService:Create(Input, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
 					TweenService:Create(Input.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 				end
@@ -2531,7 +2578,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 			function InputSettings:Set(text)
 				if Input then
-					Input.InputFrame.InputBox.Text = text
+					Input.InputFrame.InputBox.Text = tostring(text or "")
 					InputSettings.CurrentValue = text
 
 					local Success, Response = pcall(function()
@@ -2561,14 +2608,15 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return InputSettings
 		end
 
+		-- [[ DROPDOWN CREATION ]] --
 		function Tab:CreateDropdown(DropdownSettings)
 			local Dropdown = Elements.Template.Dropdown:Clone()
-			if string.find(DropdownSettings.Name,"closed") then
+			if string.find(tostring(DropdownSettings.Name),"closed") then
 				Dropdown.Name = "Dropdown"
 			else
-				Dropdown.Name = DropdownSettings.Name
+				Dropdown.Name = tostring(DropdownSettings.Name or "Dropdown")
 			end
-			Dropdown.Title.Text = DropdownSettings.Name
+			Dropdown.Title.Text = tostring(DropdownSettings.Name or "Dropdown")
 			Dropdown.Visible = true
 			Dropdown.Parent = TabPage
 
@@ -2587,7 +2635,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			if DropdownSettings.MultipleOptions then
 				if DropdownSettings.CurrentOption and type(DropdownSettings.CurrentOption) == "table" then
 					if #DropdownSettings.CurrentOption == 1 then
-						Dropdown.Selected.Text = DropdownSettings.CurrentOption[1]
+						Dropdown.Selected.Text = tostring(DropdownSettings.CurrentOption[1])
 					elseif #DropdownSettings.CurrentOption == 0 then
 						Dropdown.Selected.Text = "None"
 					else
@@ -2598,7 +2646,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 					Dropdown.Selected.Text = "None"
 				end
 			else
-				Dropdown.Selected.Text = DropdownSettings.CurrentOption[1] or "None"
+				Dropdown.Selected.Text = tostring(DropdownSettings.CurrentOption[1] or "None")
 			end
 
 			Dropdown.Toggle.ImageColor3 = SelectedTheme.TextColor
@@ -2674,8 +2722,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 			local function SetDropdownOptions()
 				for _, Option in ipairs(DropdownSettings.Options) do
 					local DropdownOption = Elements.Template.Dropdown.List.Template:Clone()
-					DropdownOption.Name = Option
-					DropdownOption.Title.Text = Option
+					DropdownOption.Name = tostring(Option)
+					DropdownOption.Title.Text = tostring(Option)
 					DropdownOption.Parent = Dropdown.List
 					DropdownOption.Visible = true
 
@@ -2693,14 +2741,14 @@ function RayfieldLibrary:CreateWindow(Settings)
 							table.remove(DropdownSettings.CurrentOption, table.find(DropdownSettings.CurrentOption, Option))
 							if DropdownSettings.MultipleOptions then
 								if #DropdownSettings.CurrentOption == 1 then
-									Dropdown.Selected.Text = DropdownSettings.CurrentOption[1]
+									Dropdown.Selected.Text = tostring(DropdownSettings.CurrentOption[1])
 								elseif #DropdownSettings.CurrentOption == 0 then
 									Dropdown.Selected.Text = "None"
 								else
 									Dropdown.Selected.Text = "Various"
 								end
 							else
-								Dropdown.Selected.Text = DropdownSettings.CurrentOption[1]
+								Dropdown.Selected.Text = tostring(DropdownSettings.CurrentOption[1])
 							end
 						else
 							if not DropdownSettings.MultipleOptions then
@@ -2709,14 +2757,14 @@ function RayfieldLibrary:CreateWindow(Settings)
 							table.insert(DropdownSettings.CurrentOption, Option)
 							if DropdownSettings.MultipleOptions then
 								if #DropdownSettings.CurrentOption == 1 then
-									Dropdown.Selected.Text = DropdownSettings.CurrentOption[1]
+									Dropdown.Selected.Text = tostring(DropdownSettings.CurrentOption[1])
 								elseif #DropdownSettings.CurrentOption == 0 then
 									Dropdown.Selected.Text = "None"
 								else
 									Dropdown.Selected.Text = "Various"
 								end
 							else
-								Dropdown.Selected.Text = DropdownSettings.CurrentOption[1]
+								Dropdown.Selected.Text = tostring(DropdownSettings.CurrentOption[1])
 							end
 							TweenService:Create(DropdownOption.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 							TweenService:Create(DropdownOption, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.DropdownSelected}):Play()
@@ -2731,10 +2779,10 @@ function RayfieldLibrary:CreateWindow(Settings)
 							TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 							TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 							Dropdown.Title.Text = "Callback Error"
-							print("Rayfield | "..DropdownSettings.Name.." Callback Error " ..tostring(Response))
+							print("Rayfield | "..tostring(DropdownSettings.Name).." Callback Error " ..tostring(Response))
 							warn('Check docs.sirius.menu for help with Rayfield specific development.')
 							task.wait(0.5)
-							Dropdown.Title.Text = DropdownSettings.Name
+							Dropdown.Title.Text = tostring(DropdownSettings.Name)
 							TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
 							TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 						end
@@ -2800,14 +2848,14 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 				if DropdownSettings.MultipleOptions then
 					if #DropdownSettings.CurrentOption == 1 then
-						Dropdown.Selected.Text = DropdownSettings.CurrentOption[1]
+						Dropdown.Selected.Text = tostring(DropdownSettings.CurrentOption[1])
 					elseif #DropdownSettings.CurrentOption == 0 then
 						Dropdown.Selected.Text = "None"
 					else
 						Dropdown.Selected.Text = "Various"
 					end
 				else
-					Dropdown.Selected.Text = DropdownSettings.CurrentOption[1]
+					Dropdown.Selected.Text = tostring(DropdownSettings.CurrentOption[1])
 				end
 
 				local Success, Response = pcall(function()
@@ -2817,10 +2865,10 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Dropdown.Title.Text = "Callback Error"
-					print("Rayfield | "..DropdownSettings.Name.." Callback Error " ..tostring(Response))
+					print("Rayfield | "..tostring(DropdownSettings.Name).." Callback Error " ..tostring(Response))
 					warn('Check docs.sirius.menu for help with Rayfield specific development.')
 					task.wait(0.5)
-					Dropdown.Title.Text = DropdownSettings.Name
+					Dropdown.Title.Text = tostring(DropdownSettings.Name)
 					TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
 					TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 				end
@@ -2886,11 +2934,12 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return DropdownSettings
 		end
 
+		-- [[ KEYBIND CREATION ]] --
 		function Tab:CreateKeybind(KeybindSettings)
 			local CheckingForKey = false
 			local Keybind = Elements.Template.Keybind:Clone()
-			Keybind.Name = KeybindSettings.Name
-			Keybind.Title.Text = KeybindSettings.Name
+			Keybind.Name = tostring(KeybindSettings.Name or "Keybind")
+			Keybind.Title.Text = tostring(KeybindSettings.Name or "Keybind")
 			Keybind.Visible = true
 			Keybind.Parent = TabPage
 
@@ -2905,7 +2954,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			TweenService:Create(Keybind.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 			TweenService:Create(Keybind.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
 
-			Keybind.KeybindFrame.KeybindBox.Text = KeybindSettings.CurrentKeybind
+			Keybind.KeybindFrame.KeybindBox.Text = tostring(KeybindSettings.CurrentKeybind or "")
 			Keybind.KeybindFrame.Size = UDim2.new(0, Keybind.KeybindFrame.KeybindBox.TextBounds.X + 24, 0, 30)
 
 			Keybind.KeybindFrame.KeybindBox.Focused:Connect(function()
@@ -2915,7 +2964,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			Keybind.KeybindFrame.KeybindBox.FocusLost:Connect(function()
 				CheckingForKey = false
 				if Keybind.KeybindFrame.KeybindBox.Text == nil or Keybind.KeybindFrame.KeybindBox.Text == "" then
-					Keybind.KeybindFrame.KeybindBox.Text = KeybindSettings.CurrentKeybind
+					Keybind.KeybindFrame.KeybindBox.Text = tostring(KeybindSettings.CurrentKeybind or "")
 				end
 			end)
 
@@ -2956,10 +3005,10 @@ function RayfieldLibrary:CreateWindow(Settings)
 							TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 							TweenService:Create(Keybind.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 							Keybind.Title.Text = "Callback Error"
-							print("Rayfield | "..KeybindSettings.Name.." Callback Error " ..tostring(Response))
+							print("Rayfield | "..tostring(KeybindSettings.Name).." Callback Error " ..tostring(Response))
 							warn('Check docs.sirius.menu for help with Rayfield specific development.')
 							task.wait(0.5)
-							Keybind.Title.Text = KeybindSettings.Name
+							Keybind.Title.Text = tostring(KeybindSettings.Name)
 							TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
 							TweenService:Create(Keybind.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 						end
@@ -3012,12 +3061,13 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return KeybindSettings
 		end
 
+		-- [[ TOGGLE CREATION ]] --
 		function Tab:CreateToggle(ToggleSettings)
 			local ToggleValue = {}
 
 			local Toggle = Elements.Template.Toggle:Clone()
-			Toggle.Name = ToggleSettings.Name
-			Toggle.Title.Text = ToggleSettings.Name
+			Toggle.Name = tostring(ToggleSettings.Name or "Toggle")
+			Toggle.Title.Text = tostring(ToggleSettings.Name or "Toggle")
 			Toggle.Visible = true
 			Toggle.Parent = TabPage
 
@@ -3085,10 +3135,10 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Toggle.Title.Text = "Callback Error"
-					print("Rayfield | "..ToggleSettings.Name.." Callback Error " ..tostring(Response))
+					print("Rayfield | "..tostring(ToggleSettings.Name).." Callback Error " ..tostring(Response))
 					warn('Check docs.sirius.menu for help with Rayfield specific development.')
 					task.wait(0.5)
-					Toggle.Title.Text = ToggleSettings.Name
+					Toggle.Title.Text = tostring(ToggleSettings.Name)
 					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
 					TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 				end
@@ -3130,10 +3180,10 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Toggle.Title.Text = "Callback Error"
-					print("Rayfield | "..ToggleSettings.Name.." Callback Error " ..tostring(Response))
+					print("Rayfield | "..tostring(ToggleSettings.Name).." Callback Error " ..tostring(Response))
 					warn('Check docs.sirius.menu for help with Rayfield specific development.')
 					task.wait(0.5)
-					Toggle.Title.Text = ToggleSettings.Name
+					Toggle.Title.Text = tostring(ToggleSettings.Name)
 					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
 					TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 				end
@@ -3177,12 +3227,12 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return ToggleSettings
 		end
 
--- Slider
+		-- [[ SLIDER CREATION ]] --
 		function Tab:CreateSlider(SliderSettings)
 			local SLDragging = false
 			local Slider = Elements.Template.Slider:Clone()
-			Slider.Name = SliderSettings.Name
-			Slider.Title.Text = SliderSettings.Name
+			Slider.Name = tostring(SliderSettings.Name or "Slider")
+			Slider.Title.Text = tostring(SliderSettings.Name or "Slider")
 			Slider.Visible = true
 			Slider.Parent = TabPage
 
@@ -3208,7 +3258,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			if not SliderSettings.Suffix then
 				Slider.Main.Information.Text = tostring(SliderSettings.CurrentValue)
 			else
-				Slider.Main.Information.Text = tostring(SliderSettings.CurrentValue) .. " " .. SliderSettings.Suffix
+				Slider.Main.Information.Text = tostring(SliderSettings.CurrentValue) .. " " .. tostring(SliderSettings.Suffix)
 			end
 
 			Slider.MouseEnter:Connect(function()
@@ -3270,7 +3320,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 						if not SliderSettings.Suffix then
 							Slider.Main.Information.Text = tostring(NewValue)
 						else
-							Slider.Main.Information.Text = tostring(NewValue) .. " " .. SliderSettings.Suffix
+							Slider.Main.Information.Text = tostring(NewValue) .. " " .. tostring(SliderSettings.Suffix)
 						end
 
 						if SliderSettings.CurrentValue ~= NewValue then
@@ -3281,10 +3331,10 @@ function RayfieldLibrary:CreateWindow(Settings)
 								TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 								TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 								Slider.Title.Text = "Callback Error"
-								print("Rayfield | "..SliderSettings.Name.." Callback Error " ..tostring(Response))
+								print("Rayfield | "..tostring(SliderSettings.Name).." Callback Error " ..tostring(Response))
 								warn('Check docs.sirius.menu for help with Rayfield specific development.')
 								task.wait(0.5)
-								Slider.Title.Text = SliderSettings.Name
+								Slider.Title.Text = tostring(SliderSettings.Name)
 								TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
 								TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 							end
@@ -3302,7 +3352,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 				local NewVal = math.clamp(NewVal, SliderSettings.Range[1], SliderSettings.Range[2])
 
 				TweenService:Create(Slider.Main.Progress, TweenInfo.new(0.45, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(0, Slider.Main.AbsoluteSize.X * ((NewVal - SliderSettings.Range[1]) / (SliderSettings.Range[2] - SliderSettings.Range[1])) > 5 and Slider.Main.AbsoluteSize.X * ((NewVal - SliderSettings.Range[1]) / (SliderSettings.Range[2] - SliderSettings.Range[1])) or 5, 1, 0)}):Play()
-				Slider.Main.Information.Text = tostring(NewVal) .. " " .. (SliderSettings.Suffix or "")
+				Slider.Main.Information.Text = tostring(NewVal) .. " " .. (tostring(SliderSettings.Suffix) or "")
 
 				local Success, Response = pcall(function()
 					SliderSettings.Callback(NewVal)
@@ -3312,10 +3362,10 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Slider.Title.Text = "Callback Error"
-					print("Rayfield | "..SliderSettings.Name.." Callback Error " ..tostring(Response))
+					print("Rayfield | "..tostring(SliderSettings.Name).." Callback Error " ..tostring(Response))
 					warn('Check docs.sirius.menu for help with Rayfield specific development.')
 					task.wait(0.5)
-					Slider.Title.Text = SliderSettings.Name
+					Slider.Title.Text = tostring(SliderSettings.Name)
 					TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
 					TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 0}):Play()
 				end
@@ -3471,21 +3521,50 @@ Topbar.ChangeSize.MouseButton1Click:Connect(function()
 	end
 end)
 
+-- [[ DUAL SEARCH LOGIC (TABS / ELEMENTS) ]] --
 Main.Search.Input:GetPropertyChangedSignal('Text'):Connect(function()
-	local searchTab = Elements:FindFirstChild("Search Results")
-	if not searchTab then return end
-	
+	local searchMode = getSetting("General", "searchType")
+	if type(searchMode) == "table" then searchMode = searchMode[1] end
+
 	local searchText = string.lower(Main.Search.Input.Text)
-	
-	for _, btn in ipairs(searchTab:GetChildren()) do
-		if btn.ClassName == "Frame" and btn.Name ~= "Placeholder" and btn.Name ~= 'UIListLayout' then
-			if #searchText == 0 then
-				btn.Visible = true
-			else
-				if string.find(string.lower(btn.Name), searchText, 1, true) then
+
+	if searchMode == "Tabs" then
+		local searchTab = Elements:FindFirstChild("Search Results")
+		if not searchTab then return end
+		
+		for _, btn in ipairs(searchTab:GetChildren()) do
+			if btn.ClassName == "Frame" and btn.Name ~= "Placeholder" and btn.Name ~= 'UIListLayout' then
+				if #searchText == 0 then
 					btn.Visible = true
 				else
-					btn.Visible = false
+					if string.find(string.lower(btn.Name), searchText, 1, true) then
+						btn.Visible = true
+					else
+						btn.Visible = false
+					end
+				end
+			end
+		end
+	elseif searchMode == "Elements" then
+		local currentTab = Elements.UIPageLayout.CurrentPage
+		if currentTab and currentTab.Name ~= "Search Results" then
+			for _, element in ipairs(currentTab:GetChildren()) do
+				if element.ClassName == "Frame" and element.Name ~= "Placeholder" and element.Name ~= "UIListLayout" and element.Name ~= "SectionSpacing" then
+					if #searchText == 0 then
+						element.Visible = true
+					else
+						local foundMatch = false
+						-- Scan all text inside the element
+						for _, descendant in ipairs(element:GetDescendants()) do
+							if descendant:IsA("TextLabel") or descendant:IsA("TextBox") or descendant:IsA("TextButton") then
+								if descendant.Text and string.find(string.lower(descendant.Text), searchText, 1, true) then
+									foundMatch = true
+									break
+								end
+							end
+						end
+						element.Visible = foundMatch
+					end
 				end
 			end
 		end
@@ -3532,7 +3611,10 @@ Topbar.Hide.MouseButton1Click:Connect(function()
 end)
 
 hideHotkeyConnection = UserInputService.InputBegan:Connect(function(input, processed)
-	if (input.KeyCode == Enum.KeyCode[getSetting("General", "rayfieldOpen")]) and not processed then
+	local hotkeySetting = getSetting("General", "rayfieldOpen")
+	if typeof(hotkeySetting) == "table" then hotkeySetting = hotkeySetting[1] end
+	
+	if hotkeySetting and (input.KeyCode == Enum.KeyCode[hotkeySetting]) and not processed then
 		if Debounce then return end
 		if Hidden then
 			Hidden = false
