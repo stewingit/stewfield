@@ -170,12 +170,6 @@ local function loadSettings()
 			end
 		end
 
-		if useStudio then
-			file = [[
-	{"General":{"rayfieldOpen":{"Value":"K","Type":"bind","Name":"Rayfield Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"Rayfield Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}}}
-]]
-		end
-
 		if file then
 			local decodeSuccess, decodedFile = pcall(function() return HttpService:JSONDecode(file) end)
 			if decodeSuccess then
@@ -201,7 +195,6 @@ local function loadSettings()
 									setting.Element:Set(setting.Value)
 							end
 						end
-
 					end
 				end
 			end
@@ -212,11 +205,14 @@ local function loadSettings()
 				local categoryName = split[1]
 				local settingNameOnly = split[2]
 				if settingsTable[categoryName] and settingsTable[categoryName][settingNameOnly] then
+					settingsTable[categoryName][settingNameOnly].Value = settingValue 
 					settingsTable[categoryName][settingNameOnly].Element:Set(settingValue)
 				end
 			end
 		end
+		
 		settingsInitialized = true
+		table.clear(overriddenSettings) 
 	end)
 
 	if not success then 
