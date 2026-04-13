@@ -198,9 +198,10 @@ local function loadSettings()
 						if file[categoryName][settingName] then
 							setting.Value = file[categoryName][settingName].Value
 							if setting.Element and setting.Element.Set then
-								setting.Element:Set(getSetting(categoryName, settingName))
+									setting.Element:Set(setting.Value)
 							end
 						end
+
 					end
 				end
 			end
