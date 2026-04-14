@@ -3481,7 +3481,6 @@ function StewfieldLibrary:CreateWindow(Settings)
 		Topbar.ChangeSize.ImageTransparency = 1
 		Topbar.Hide.ImageTransparency = 1
 
-		task.wait(0.3)
 		Topbar.Visible = true
 		TabList.Visible = true
 		
