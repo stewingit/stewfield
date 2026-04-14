@@ -638,6 +638,23 @@ do
 			end
 
 			if nextMissing() then
+				local Main = Rayfield.Main
+				local LoadingFrame = Main.LoadingFrame
+				
+				Main.Size = UDim2.new(0, 420, 0, 100)
+				Main.Visible = true
+				Main.BackgroundTransparency = 1
+				if Main:FindFirstChild('Shadow') then
+					Main.Shadow.Image.ImageTransparency = 1
+				end
+				
+				LoadingFrame.Title.TextTransparency = 0
+				LoadingFrame.Subtitle.TextTransparency = 0
+				LoadingFrame.Version.TextTransparency = 0
+				LoadingFrame.Title.Text = "Stewfield"
+				LoadingFrame.Subtitle.Text = "Downloading Assets..."
+				LoadingFrame.Visible = true
+
 				task.spawn(function()
 					while true do
 						local id = nextMissing()
@@ -650,6 +667,9 @@ do
 				while nextMissing() do
 					task.wait(0.1)
 				end
+				
+				LoadingFrame.Visible = false
+				Main.Visible = false
 			end
 
 			for id, _ in assetFiles do
@@ -3406,11 +3426,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 		return Tab
 	end
 
-	task.spawn(function()
-		-- We wait so the user script has time to create tabs and elements 
-		-- before we hide the loading screen and animate the interface into place.
-		task.wait(1.5)
-		
+	function RayfieldLibrary:LoadConfiguration()
 		Elements.Visible = true
 
 		TweenService:Create(Main, TweenInfo.new(0.7, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 390, 0, 90)}):Play()
@@ -3461,7 +3477,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 		if dragBar then
 			TweenService:Create(dragBarCosmetic, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7}):Play()
 		end
-	end)
+	end
 
 	function Window.ModifyTheme(NewTheme)
 		local success = pcall(ChangeTheme, NewTheme)
