@@ -3271,7 +3271,7 @@ function StewfieldLibrary:CreateWindow(Settings)
 			Slider.UIStroke.Transparency = 1
 			Slider.Title.TextTransparency = 1
 
-			if SelectedTheme ~= StewfieldLibrary.Theme.Default then
+			if SelectedTheme ~= RayfieldLibrary.Theme.Default then
 				Slider.Main.Shadow.Visible = false
 			end
 
@@ -3362,8 +3362,8 @@ function StewfieldLibrary:CreateWindow(Settings)
 								TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 								TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 								Slider.Title.Text = "Callback Error"
-								print("Stewfield | "..tostring(SliderSettings.Name).." Callback Error " ..tostring(Response))
-								warn('Check docs.sirius.menu for help with Stewfield specific development.')
+								print("Rayfield | "..tostring(SliderSettings.Name).." Callback Error " ..tostring(Response))
+								warn('Check docs.sirius.menu for help with Rayfield specific development.')
 								task.wait(0.5)
 								Slider.Title.Text = tostring(SliderSettings.Name)
 								TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -3393,8 +3393,8 @@ function StewfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Slider.Title.Text = "Callback Error"
-					print("Stewfield | "..tostring(SliderSettings.Name).." Callback Error " ..tostring(Response))
-					warn('Check docs.sirius.menu for help with Stewfield specific development.')
+					print("Rayfield | "..tostring(SliderSettings.Name).." Callback Error " ..tostring(Response))
+					warn('Check docs.sirius.menu for help with Rayfield specific development.')
 					task.wait(0.5)
 					Slider.Title.Text = tostring(SliderSettings.Name)
 					TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -3407,15 +3407,15 @@ function StewfieldLibrary:CreateWindow(Settings)
 			function SliderSettings:Destroy()
 				if Slider then
 					if SliderSettings.Flag then
-						StewfieldLibrary.Flags[SliderSettings.Flag] = nil
+						RayfieldLibrary.Flags[SliderSettings.Flag] = nil
 					end
 					Slider:Destroy()
 					Slider = nil
 				end
 			end
 
-			Stewfield.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
-				if SelectedTheme ~= StewfieldLibrary.Theme.Default then
+			Rayfield.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				if SelectedTheme ~= RayfieldLibrary.Theme.Default then
 					Slider.Main.Shadow.Visible = false
 				end
 
