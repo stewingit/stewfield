@@ -1,4 +1,4 @@
--- Initialization
+-- Initialisation
 if debugX then
 	warn('Initialising Stewfield')
 end
