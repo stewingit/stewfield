@@ -645,8 +645,8 @@ do
 				local LoadingFrame = Main.LoadingFrame
 				
 				Main.Size = UDim2.new(0, 420, 0, 100)
-				Main.Visible = false
-				Main.BackgroundTransparency = 1
+				Main.Visible = true
+				Main.BackgroundTransparency = 0
 				Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25) 
 				if Main:FindFirstChild('Shadow') then
 					Main.Shadow.Image.ImageTransparency = 0.6
