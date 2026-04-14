@@ -644,8 +644,6 @@ do
 				local Main = Stewfield.Main
 				local LoadingFrame = Main.LoadingFrame
 				
-				print("[Stewfield Debug] Missing assets detected. Downloading...")
-				-- FIX: Explicitly hide overlapping template elements during download
 				if Main:FindFirstChild("Topbar") then Main.Topbar.Visible = false end
 				if Main:FindFirstChild("Elements") then Main.Elements.Visible = false end
 				if Main:FindFirstChild("TabList") then Main.TabList.Visible = false end
@@ -3451,14 +3449,11 @@ function StewfieldLibrary:CreateWindow(Settings)
 		return Tab
 	end
 
-	-- FIX: Bind to Window so Window:LoadConfiguration() executes properly
 	function Window:LoadConfiguration()
-		print("[Stewfield Debug] Window:LoadConfiguration() triggered.")
 		StewfieldLibrary:LoadConfiguration()
 	end
 
 	function StewfieldLibrary:LoadConfiguration()
-		print("[Stewfield Debug] Executing LoadConfiguration animation sequence...")
 		configLoaded = true
 		Elements.Visible = true
 
@@ -3470,7 +3465,6 @@ function StewfieldLibrary:CreateWindow(Settings)
 		task.wait(0.1)
 		
 		LoadingFrame.Visible = false
-		print("[Stewfield Debug] Loading text hidden, expanding main UI...")
 		
 		TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = useMobileSizing and UDim2.new(0, 500, 0, 275) or UDim2.new(0, 500, 0, 475)}):Play()
 		TweenService:Create(Main.Shadow.Image, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {ImageTransparency = 0.6}):Play()
@@ -3488,7 +3482,6 @@ function StewfieldLibrary:CreateWindow(Settings)
 		Topbar.Hide.ImageTransparency = 1
 
 		task.wait(0.5)
-		print("[Stewfield Debug] Displaying Topbar and TabList.")
 		Topbar.Visible = true
 		TabList.Visible = true
 		
@@ -3513,13 +3506,10 @@ function StewfieldLibrary:CreateWindow(Settings)
 			TweenService:Create(dragBarCosmetic, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7}):Play()
 		end
 
-		-- FIX: Force UI elements to update visibility state properly to catch any yielding glitches
-		print("[Stewfield Debug] Refreshing element visibilities.")
 		pcall(function()
 			setElementsVisible(true)
 			setTabButtonsVisible(true)
 		end)
-		print("[Stewfield Debug] LoadConfiguration sequence completed successfully.")
 	end
 
 	function Window.ModifyTheme(NewTheme)
