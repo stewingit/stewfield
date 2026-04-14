@@ -644,25 +644,20 @@ do
 				local Main = Stewfield.Main
 				local LoadingFrame = Main.LoadingFrame
 				
-				Topbar.Visible = false
-Elements.Visible = false
-TabList.Visible = false
-
-Main.Size = UDim2.new(0, 420, 0, 100)
-Main.Visible = true
-Main.BackgroundTransparency = 0
-Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-
-if Main:FindFirstChild("Shadow") then
-	Main.Shadow.Image.ImageTransparency = 0.6
-end
-
-LoadingFrame.Title.TextTransparency = 0
-LoadingFrame.Subtitle.TextTransparency = 0
-LoadingFrame.Version.TextTransparency = 0
-LoadingFrame.Title.Text = "Stewfield"
-LoadingFrame.Subtitle.Text = "Downloading Assets..."
-LoadingFrame.Visible = true
+				Main.Size = UDim2.new(0, 420, 0, 100)
+				Main.Visible = true
+				Main.BackgroundTransparency = 0
+				Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25) 
+				if Main:FindFirstChild('Shadow') then
+					Main.Shadow.Image.ImageTransparency = 0.6
+				end
+				
+				LoadingFrame.Title.TextTransparency = 0
+				LoadingFrame.Subtitle.TextTransparency = 0
+				LoadingFrame.Version.TextTransparency = 0
+				LoadingFrame.Title.Text = "Stewfield"
+				LoadingFrame.Subtitle.Text = "Downloading Assets..."
+				LoadingFrame.Visible = true
 
 				task.spawn(function()
 					while true do
