@@ -683,6 +683,8 @@ do
 				
 				-- Ensure the loading frame maintains seamless transition for LoadConfiguration
 				LoadingFrame.Subtitle.Text = "Loading..."
+				LoadingFrame.Visible = false
+				Main.Visible = false
 			end
 
 			for id, _ in assetFiles do
@@ -1584,23 +1586,20 @@ function StewfieldLibrary:CreateWindow(Settings)
 	local Passthrough = false
 	Topbar.Title.Text = tostring(Settings.Name or "")
 
-		Main.Size = UDim2.new(0, 420, 0, 100)
+	Main.Size = UDim2.new(0, 420, 0, 100)
 	Main.Visible = true
+	Main.BackgroundTransparency = 1
 	if Main:FindFirstChild('Notice') then Main.Notice.Visible = false end
+	Main.Shadow.Image.ImageTransparency = 1
 
-	-- Only hide elements if we aren't seamlessly transitioning from the asset downloader
-	if LoadingFrame.Subtitle.Text ~= "Loading..." then
-		Main.BackgroundTransparency = 1
-		Main.Shadow.Image.ImageTransparency = 1
-		LoadingFrame.Title.TextTransparency = 1
-		LoadingFrame.Subtitle.TextTransparency = 1
-		LoadingFrame.Version.TextTransparency = 1
-	end
+	LoadingFrame.Title.TextTransparency = 1
+	LoadingFrame.Subtitle.TextTransparency = 1
 
 	if Settings.ShowText then
 		MPrompt.Title.Text = tostring('Show '..Settings.ShowText)
 	end
 
+	LoadingFrame.Version.TextTransparency = 1
 	LoadingFrame.Title.Text = tostring(Settings.LoadingTitle or "Stewfield")
 	LoadingFrame.Subtitle.Text = "Loading..."
 
@@ -3272,7 +3271,7 @@ function StewfieldLibrary:CreateWindow(Settings)
 			Slider.UIStroke.Transparency = 1
 			Slider.Title.TextTransparency = 1
 
-			if SelectedTheme ~= RayfieldLibrary.Theme.Default then
+			if SelectedTheme ~= StewfieldLibrary.Theme.Default then
 				Slider.Main.Shadow.Visible = false
 			end
 
@@ -3363,8 +3362,8 @@ function StewfieldLibrary:CreateWindow(Settings)
 								TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 								TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 								Slider.Title.Text = "Callback Error"
-								print("Rayfield | "..tostring(SliderSettings.Name).." Callback Error " ..tostring(Response))
-								warn('Check docs.sirius.menu for help with Rayfield specific development.')
+								print("Stewfield | "..tostring(SliderSettings.Name).." Callback Error " ..tostring(Response))
+								warn('Check docs.sirius.menu for help with Stewfield specific development.')
 								task.wait(0.5)
 								Slider.Title.Text = tostring(SliderSettings.Name)
 								TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -3394,8 +3393,8 @@ function StewfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Slider.Title.Text = "Callback Error"
-					print("Rayfield | "..tostring(SliderSettings.Name).." Callback Error " ..tostring(Response))
-					warn('Check docs.sirius.menu for help with Rayfield specific development.')
+					print("Stewfield | "..tostring(SliderSettings.Name).." Callback Error " ..tostring(Response))
+					warn('Check docs.sirius.menu for help with Stewfield specific development.')
 					task.wait(0.5)
 					Slider.Title.Text = tostring(SliderSettings.Name)
 					TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -3408,15 +3407,15 @@ function StewfieldLibrary:CreateWindow(Settings)
 			function SliderSettings:Destroy()
 				if Slider then
 					if SliderSettings.Flag then
-						RayfieldLibrary.Flags[SliderSettings.Flag] = nil
+						StewfieldLibrary.Flags[SliderSettings.Flag] = nil
 					end
 					Slider:Destroy()
 					Slider = nil
 				end
 			end
 
-			Rayfield.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
-				if SelectedTheme ~= RayfieldLibrary.Theme.Default then
+			Stewfield.Main:GetPropertyChangedSignal('BackgroundColor3'):Connect(function()
+				if SelectedTheme ~= StewfieldLibrary.Theme.Default then
 					Slider.Main.Shadow.Visible = false
 				end
 
@@ -3498,11 +3497,6 @@ function StewfieldLibrary:CreateWindow(Settings)
 		if dragBar then
 			TweenService:Create(dragBarCosmetic, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.7}):Play()
 		end
-	end
-
-	-- Binds the command to the Window object so it doesn't silently error and get stuck
-	function Window:LoadConfiguration()
-		StewfieldLibrary:LoadConfiguration()
 	end
 
 	function Window.ModifyTheme(NewTheme)
