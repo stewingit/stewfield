@@ -105,7 +105,7 @@ local currentSettingsName = "DefaultSettings"
 local settingsTable = {
 	General = {
 		stewfieldOpen = {Type = 'bind', Value = 'K', Name = 'Stewfield Keybind'},
-		rememberTab = {Type = 'toggle', Value = false, Name = 'Remember Previous Tab'},
+		rememberTab = {Type = 'toggle', Value = true, Name = 'Remember Previous Tab'},
 		lastTab = {Type = 'hidden', Value = ''},
 		theme = {Type = 'dropdown', Value = {'Default'}, Name = 'Interface Theme', Options = {'Default', 'Ocean', 'AmberGlow', 'Light', 'Amethyst', 'Green', 'Bloom', 'DarkBlue', 'Serenity'}},
 		searchType = {Type = 'dropdown', Value = {'Elements'}, Name = 'Search Through', Options = {'Tabs', 'Elements'}}
